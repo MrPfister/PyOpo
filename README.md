@@ -9,6 +9,8 @@ Supported features:
 
 ## Screenshots
 
+![Fairway](screenshots/fairway.png)
+
 ## Implementation notes
 
 ## Missing or incomplete features
