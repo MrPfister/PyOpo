@@ -9,6 +9,8 @@ Supported features:
 
 ## Screenshots
 
+Example code and applications downloaded from the internet, running in the PyOpo interpreter. Some feature the attached Debugger tooling:
+
 ![Fairway](screenshots/fairway.png)
 
 ## Implementation notes
