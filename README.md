@@ -14,6 +14,9 @@ Supported features:
 Example code and applications downloaded from the internet, running in the PyOpo interpreter. Some feature the attached Debugger tooling:
 
 ![Fairway](screenshots/fairway.png)
+![LetsShop](screenshots/letsshop.png)
+![Blitz](screenshots/blitz.png)
+![pipe3a](screenshots/pipe3a.png)
 
 ## Implementation notes
 
