@@ -315,9 +315,3 @@ class loader:
             return ""
 
         return buffer[offset+1:offset+1+l].decode("ascii", "replace")
-
-        
-# __name__
-if __name__=="__main__":
-    executable = loader.load_executable(os.path.join(os.path.dirname(str(__file__)), "DRIVE\M\APP\\\FAIRWAY.OPA"))
-    executable.execute()

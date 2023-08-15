@@ -67,15 +67,14 @@ class executable:
         # Information on the internal location and type of embedded files.
         self.embedded_files = embedded_files
 
-        # Data Stack Frame
-        self.memory_debugger = DebuggerDSF(executable=self, dsf_size=DATA_STACK_FRAME_SIZE)
-        self.profiler_debugger = DebuggerProfiler()
+        # Debugging Tools
+        self.memory_debugger = None
+        self.profiler_debugger = None
 
         # Graphical Emulation Layers
         self.window_manager = window_manager.WindowManager(executable=self)
         self.dialog_manager = None
         self.menu_manager = None
-
 
         # Drive Abstraction
         self.drive_path = os.path.join(os.path.dirname(str(__file__)), "DRIVE")
@@ -119,6 +118,25 @@ class executable:
             'm8': 0.0,
             'm9': 0.0
         }
+
+
+    def set_filesystem_path(self, path: str) -> None:
+        """Sets the local filesystem location to the base of the emulated Psion filesystem
+        """
+        self.drive_path = path
+
+
+    def attach_dsf_debugger(self) -> None:
+        """Attach debug and analysis tooling to the Heap and Data Stack Frames contained therein
+        """
+        self.memory_debugger = DebuggerDSF(executable=self, dsf_size=DATA_STACK_FRAME_SIZE)
+
+
+    def attach_profiler(self) -> None:
+        """Attach a performance profiling tool to the interpreter
+        """
+        self.profiler_debugger = DebuggerProfiler()
+
 
     def __str__(self):
         return self.file
