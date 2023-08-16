@@ -3,7 +3,9 @@ SIBO/EPOC OPO (Compiled OPL source code) interpreter written in Python. Supports
 
 This project has taken OPO as a grey box - it is not pure black box implementation due to prior works, however other interpreters and runtimes have not been simply ported to Python, this interpreter has been built from the ground up.
 
-Some features may be archaic or seem inefficent, this was due to the interative nature of development (a hobby project); this project was made as an adventure in understanding into CPythons internals and the wider concept of interpreters/compilers and runtime environments. Thus development was iterative as more complex compiled OPL programs were run.
+Some features may be anarchic or seem inefficent, this was due to the interative nature of development (a hobby project); this project was made as an adventure in understanding into CPythons internals and the wider concept of interpreters/compilers and runtime environments. Thus development was iterative as more complex compiled OPL programs were run.
+
+OPL and associated QCode is interesting in that it is a very high level language, encorporating OpCodes and functionality that would usually be built into libraries rather than language itself. These include a Database Management System (DBMS) and feature rich Graphics, expanding the OpCode set to just under 300!
 
 
 ## Supported features:
