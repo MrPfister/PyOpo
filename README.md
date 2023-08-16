@@ -1,7 +1,12 @@
 # PyOpo
-SIBO/EPOC Compiled OPL interpreter written in Python
+SIBO/EPOC OPO (Compiled OPL source code) interpreter written in Python. Supports the SIBO (Psion 3 Series) intermediate QCode Opcode set.
 
-Supported features:
+This project has taken OPO as a grey box - it is not pure black box implementation due to prior works, however other interpreters and runtimes have not been simply ported to Python, this interpreter has been built from the ground up.
+
+Some features may be archaic or seem inefficent, this was due to the interative nature of development (a hobby project); this project was made as an adventure in understanding into CPythons internals and the wider concept of interpreters/compilers and runtime environments. Thus development was iterative as more complex compiled OPL programs were run.
+
+
+## Supported features:
 
 * Filesystem abstraction and support for various EPOC/SIBO file types (DBF, SPR)
 * Multi-module support via LOADM
