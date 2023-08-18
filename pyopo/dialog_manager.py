@@ -3,7 +3,7 @@ import json
 import struct
 import sys
 
-from filehandler_filesystem import *
+from pyopo.filehandler_filesystem import *
 
 import pygame
 from pygame.locals import *

@@ -1,9 +1,6 @@
-import struct
-import loader
-import datetime
-import dialog_manager
+from pyopo import dialog_manager
 
-from filehandler_filesystem import *
+from pyopo.filehandler_filesystem import *
 import logging       
 import logging.config   
 

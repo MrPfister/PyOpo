@@ -1,7 +1,7 @@
 import struct
 import time
 
-from opl_exceptions import *
+from pyopo.opl_exceptions import *
 
 import logging       
 import logging.config   

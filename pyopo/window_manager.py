@@ -6,7 +6,7 @@ import datetime
 import math
 import logging
 import logging.config
-from opl_exceptions import *
+from pyopo.opl_exceptions import *
 from typing import Optional
 
 import pygame

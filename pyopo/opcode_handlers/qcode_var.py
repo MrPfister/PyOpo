@@ -1,6 +1,8 @@
 import struct
-import loader
-from opl_exceptions import *
+from pyopo.opl_exceptions import *
+
+from pyopo import loader
+
 import logging       
 import logging.config   
 

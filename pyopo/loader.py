@@ -3,6 +3,8 @@ import json
 import struct                                                       
 import sys
 
+from typing import Any
+
 import logging       
 import logging.config   
 
@@ -16,6 +18,8 @@ logging.logThreads = False
 logging.logProcesses = False
 logging.logMultiprocessing = False
 
+from pyopo.pyopo import executable
+
 import pyopo
 
 class loader:
@@ -24,7 +28,7 @@ class loader:
     @staticmethod
     def load_executable(
         file: str
-    ):
+    ) -> Any:
 
         binary = None
         with open(file,"rb") as f:
@@ -41,7 +45,7 @@ class loader:
 
         procedure_table = loader._read_procedure_table(header["procedure_table_offset"], header["translator_version"], binary, file)
 
-        return pyopo.executable(file, binary, header, procedure_table, embedded_files)
+        return executable(file, binary, header, procedure_table, embedded_files)
     
     def _readembeddedfiles(
         binary: bytes,

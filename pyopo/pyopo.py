@@ -1,23 +1,25 @@
-import opcodes
+
 import struct
 import json
 import sys
 import os
 import time
-import window_manager
-import dialog_manager
-import filehandler_dbf
 import pygame
 from pygame.locals import *
-from typing import Optional, Any
+from typing import Optional, Any, Self
 
-from filehandler_filesystem import *
 
-from hals import *
+from .opcodes import *
+from .window_manager import WindowManager
+from .dialog_manager import *
+from .filehandler_dbf import *
+from .filehandler_filesystem import *
+
+from .hals import *
 
 # Debuggers
-from debugger_dsf import DebuggerDSF
-from debugger_profiler import DebuggerProfiler
+from .debugger.debugger_dsf import DebuggerDSF
+from .debugger.debugger_profiler import DebuggerProfiler
 
 DATA_STACK_FRAME_SIZE = 64 * 1024
 
@@ -72,7 +74,7 @@ class executable:
         self.profiler_debugger = None
 
         # Graphical Emulation Layers
-        self.window_manager = window_manager.WindowManager(executable=self)
+        self.window_manager = WindowManager(executable=self)
         self.dialog_manager = None
         self.menu_manager = None
 
@@ -140,15 +142,24 @@ class executable:
 
     def __str__(self):
         return self.file
+    
 
-    def loadm(self, module):
+    def loadm(
+        self, 
+        module: Self
+    ) -> None:
+        
         self.modules.append(module)
 
         self.procedure_table.extend(module.procedure_table)
 
-    def unloadm(self, module):
-        raise ('Not implemented')
-        pass
+
+    def unloadm(
+        self,
+        module: Self
+    ) -> None:
+        
+        raise NotImplementedError()
 
     def get_proc_name(self) -> str:
         if len(self.proc_stack) == 0:
@@ -379,7 +390,7 @@ class executable:
     ):
         
         self.databases.append({
-            'handler': filehandler_dbf.dbf(executable=self, filename=filename),
+            'handler': dbf(executable=self, filename=filename),
             'd': d,
             'vars': vars,
             'readonly': readonly
@@ -394,7 +405,7 @@ class executable:
 
     def create_dbf(self, filename, d, vars):
         self.databases.append({
-            'handler': filehandler_dbf.dbf(executable=self, filename=filename),
+            'handler': dbf(executable=self, filename=filename),
             'd': d,
             'vars': vars,
             'readonly': False
@@ -661,7 +672,7 @@ class stack_entry:
             #_logger.debug(f"Opcode: 0x57 {hex(op_code)} - {self._program_counter} / {self.procedure['qcode_len']}")
             self._program_counter += 1
 
-            op_code_handler = opcodes.opcode_0x57_handler.get(op_code)
+            op_code_handler = opcode_0x57_handler.get(op_code)
         elif op_code in [0x74, 0x75, 0x76, 0x77]:
             #_logger.info(' - 0x74 - 0x77 RETURN called')
 
@@ -688,7 +699,7 @@ class stack_entry:
             #_logger.debug(f"Opcode: 0xED {hex(op_code)} - {self._program_counter} / {self.procedure['qcode_len']} / {len(self.executable.stack.stack_frame)}")
             self._program_counter += 1
 
-            op_code_handler = opcodes.opcode_0xED_handler.get(op_code)
+            op_code_handler = opcode_0xED_handler.get(op_code)
 
         elif op_code == 0xFF:
             # Opcode subset with 0xFF hint
@@ -697,13 +708,13 @@ class stack_entry:
             #_logger.debug(f"Opcode: 0xFF {hex(op_code)} - {self._program_counter} / {self.procedure['qcode_len']} / {len(self.executable.stack.stack_frame)}")
             self._program_counter += 1
 
-            op_code_handler = opcodes.opcode_0xFF_handler.get(op_code)
+            op_code_handler = opcode_0xFF_handler.get(op_code)
 
-        elif op_code in opcodes.opcode_handler:
+        elif op_code in opcode_handler:
             # Execute the Opcode
 
             #_logger.debug(f"Opcode: {hex(op_code)} - {self._program_counter} / {self.procedure['qcode_len']} / {len(self.executable.stack.stack_frame)}")
-            op_code_handler = opcodes.opcode_handler[op_code]
+            op_code_handler = opcode_handler[op_code]
 
         if op_code_handler:
             try:

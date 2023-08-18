@@ -1,6 +1,6 @@
 import struct
-from filehandler_filesystem import *
-from window_manager import DrawableSprite
+from pyopo.filehandler_filesystem import *
+from pyopo.window_manager import DrawableSprite
 import logging       
 import logging.config   
 

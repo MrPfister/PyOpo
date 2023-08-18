@@ -3,7 +3,7 @@ import json
 import struct
 import sys
 from functools import lru_cache
-from filehandler_filesystem import *
+from pyopo.filehandler_filesystem import *
 from typing import Self
 
 from dataclasses import dataclass

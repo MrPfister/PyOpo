@@ -1,4 +1,4 @@
-import opcodes
+
 import struct
 import json
 import os
@@ -6,6 +6,7 @@ import time
 import datetime
 import pygame
 from pygame.locals import *
+from .opcodes import *
 
 import logging       
 import logging.config   

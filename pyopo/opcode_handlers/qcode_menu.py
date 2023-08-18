@@ -1,6 +1,7 @@
-import menu_manager
 import logging       
 import logging.config   
+
+from pyopo import menu_manager
 
 logging.config.fileConfig(fname="logger.conf")
 _logger = logging.getLogger()                            

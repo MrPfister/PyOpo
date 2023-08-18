@@ -1,8 +1,6 @@
-import struct
-import loader
 import datetime
 from datetime import date
-from opl_exceptions import *
+from pyopo.opl_exceptions import *
 import logging       
 import logging.config   
 

@@ -1,8 +1,9 @@
 import struct
-import loader
 import time
 import logging       
 import logging.config   
+
+from pyopo import loader
 
 logging.config.fileConfig(fname="logger.conf")
 _logger = logging.getLogger()                            

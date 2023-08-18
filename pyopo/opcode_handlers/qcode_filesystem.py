@@ -3,7 +3,7 @@ import time
 import random
 import json
 import os
-from filehandler_filesystem import *
+from pyopo.filehandler_filesystem import *
 import logging       
 import logging.config   
 
