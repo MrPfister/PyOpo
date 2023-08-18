@@ -15,24 +15,11 @@ from pyopo.opcode_handlers import (
     qcode_kernel,
     qcode_dialog
 )
-"""
-from .opcode_handlers.qcode_var import *
-from .opcode_handlers.qcode_cmp import *
-from .opcode_handlers.qcode_graphics import *
-from .opcode_handlers.qcode_screen import *
-from .opcode_handlers.qcode_gen import *
-from .opcode_handlers.qcode_str import *
-from .opcode_handlers.qcode_maths import *
-from .opcode_handlers.qcode_dbf import *
-from .opcode_handlers.qcode_datetime import *
-from .opcode_handlers.qcode_filesystem import *
-from .opcode_handlers.qcode_dialog import *
-from .opcode_handlers.qcode_menu import *
-from .opcode_handlers.qcode_kernel import *
-from .opcode_handlers.qcode_memory import *
-from .opcode_handlers.qcode_modules import *
-"""
+
 from .opl_exceptions import *
+
+from pyopo.heap import data_stack
+from pyopo.var_stack import stack
 
 import logging       
 import logging.config   
@@ -42,7 +29,7 @@ _logger = logging.getLogger()
 #_logger.setLevel(logging.DEBUG) 
 
 
-def qcode_invalid_opcode(procedure, data_stack, stack):
+def qcode_invalid_opcode(procedure, data_stack: data_stack, stack: stack):
     opcode = procedure.get_executed_opcode()
 
     _logger.Error(f"Invalid Opcode - {hex(opcode)}")

@@ -1,10 +1,13 @@
 import struct
 from pyopo.opl_exceptions import *
 
-from pyopo import loader
-
 import logging       
 import logging.config   
+
+from pyopo.heap import data_stack
+from pyopo.var_stack import stack
+
+from pyopo.loader import loader
 
 logging.config.fileConfig(fname="logger.conf")
 _logger = logging.getLogger()                            
@@ -14,7 +17,7 @@ _logger = logging.getLogger()
 STRUCT_FORMAT_UINT16 = struct.Struct("<H")
 STRUCT_FORMAT_INT16 = struct.Struct("<h")
 
-def qcode_push_var(procedure, data_stack, stack):
+def qcode_push_var(procedure, data_stack: data_stack, stack: stack):
     dsf_offset = procedure.data_stack_frame_offset + procedure.read_qcode_uint16()
 
     op_code = procedure.get_executed_opcode()
@@ -22,12 +25,12 @@ def qcode_push_var(procedure, data_stack, stack):
 
     value = data_stack.read(op_code, dsf_offset)
 
-    #_logger.debug(f"{hex(op_code)} - push+ {value} of Type: {op_code} at LL+ DSF Offset: {dsf_offset}")
+    _logger.debug(f"{hex(op_code)} - push+ {value} of Type: {op_code} at LL+ DSF Offset: {dsf_offset}")
 
     stack.push(op_code, value)
     
 
-def qcode_push_addr_array(procedure, data_stack, stack):
+def qcode_push_addr_array(procedure, data_stack: data_stack, stack: stack):
     #print(f"{hex(op_code)} - push+ the addr of LL+(pop%)")
 
     array_type = procedure.get_executed_opcode() - 0x14
@@ -65,8 +68,8 @@ def qcode_push_addr_array(procedure, data_stack, stack):
     stack.push(4, dsf_offset)
     
 
-def qcode_push_addr_field(procedure, data_stack, stack):
-    #_logger.debug(f"{hex(procedure.get_executed_opcode())} - push= the address of field pop$+ of data file D")
+def qcode_push_addr_field(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"{hex(procedure.get_executed_opcode())} - push= the address of field pop$+ of data file D")
 
     array_type = procedure.get_executed_opcode() - 0x24
 
@@ -87,12 +90,12 @@ def qcode_push_addr_field(procedure, data_stack, stack):
     if dsf_offset == -1:
         raise('Error finding var ref')
 
-    #_logger.info(f" - Calculated Pseudo DSF offset for Database = {dsf_offset}")
+    _logger.info(f" - Calculated Pseudo DSF offset for Database = {dsf_offset}")
     stack.push(4, dsf_offset)
 
 
-def qcode_push_value_field(procedure, data_stack, stack):
-    #_logger.debug(f"{hex(procedure.get_executed_opcode())} - push= the value of field pop$+ of data file D")
+def qcode_push_value_field(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"{hex(procedure.get_executed_opcode())} - push= the value of field pop$+ of data file D")
     
     d = procedure.read_qcode_byte() # DBF D Byte
 
@@ -101,14 +104,14 @@ def qcode_push_value_field(procedure, data_stack, stack):
     found_db_field = False
     for database in procedure.executable.databases:
         if database['d'] == d:
-            #_logger.debug(f"Found DB: {d}")
+            _logger.debug(f"Found DB: {d}")
             for i in range(len(database['vars'])):
                 if database['vars'][i][1]==var_name:
-                    #_logger.debug('Found DB Field Var')
+                    _logger.debug('Found DB Field Var')
                     db_field_val = database['handler'].current_record[database['vars'][i][1]]
                     db_field_type = database['vars'][i][0]
                     
-                    #_logger.debug(f'Found DB Field Var {var_name} of value {db_field_val} of type {db_field_type}')
+                    _logger.debug(f'Found DB Field Var {var_name} of value {db_field_val} of type {db_field_type}')
                     
                     stack.push(db_field_type, db_field_val)
                     found_db_field = True
@@ -119,8 +122,8 @@ def qcode_push_value_field(procedure, data_stack, stack):
         raise("DB Field var not found")
 
 
-def qcode_push_var_array(procedure, data_stack, stack):
-    #_logger.debug(f"{hex(procedure.get_executed_opcode())} - push+ the value of LL+(pop%)")
+def qcode_push_var_array(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"{hex(procedure.get_executed_opcode())} - push+ the value of LL+(pop%)")
 
     array_type = procedure.get_executed_opcode() - 0x10
 
@@ -128,7 +131,7 @@ def qcode_push_var_array(procedure, data_stack, stack):
     dsf_offset = procedure.data_stack_frame_offset + offset
     array_index = stack.pop() - 1 # OPL Indexes start at 1
 
-    #_logger.debug(f"Type: {array_type} at DSF Offset: {dsf_offset} Array Offset: {array_index}")
+    _logger.debug(f"Type: {array_type} at DSF Offset: {dsf_offset} Array Offset: {array_index}")
 
     if array_type == 0:
         # Word Array
@@ -159,18 +162,18 @@ def qcode_push_var_array(procedure, data_stack, stack):
     stack.push(array_type, value)
 
 
-def qcode_push_addr(procedure, data_stack, stack):
-    #_logger.debug(f"{hex(procedure.get_executed_opcode())} - push= the address of LL+")
+def qcode_push_addr(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"{hex(procedure.get_executed_opcode())} - push= the address of LL+")
 
     dsf_offset = procedure.data_stack_frame_offset + procedure.read_qcode_uint16()
 
-    #_logger.debug(f" -  DSF Offset: {dsf_offset}")
+    _logger.debug(f" -  DSF Offset: {dsf_offset}")
 
     stack.push(4, dsf_offset) # Push 
 
 
-def qcode_uadd(procedure, data_stack, stack):
-    #_logger.debug("0x57 0x50 - push= UADD pop%2 pop%1")
+def qcode_uadd(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug("0x57 0x50 - push= UADD pop%2 pop%1")
 
     # Convert INT16 vals to UINT16
     y = STRUCT_FORMAT_UINT16.unpack_from(STRUCT_FORMAT_INT16.pack(stack.pop()))[0]
@@ -178,8 +181,8 @@ def qcode_uadd(procedure, data_stack, stack):
     stack.push(0, x + y)
     
 
-def qcode_usub(procedure, data_stack, stack):
-    #_logger.debug("0x57 0x51 - push= USUB pop%2 pop%1")
+def qcode_usub(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug("0x57 0x51 - push= USUB pop%2 pop%1")
 
     # Convert INT16 vals to UINT16
     y = STRUCT_FORMAT_UINT16.unpack_from(STRUCT_FORMAT_INT16.pack(stack.pop()))[0]
@@ -187,8 +190,8 @@ def qcode_usub(procedure, data_stack, stack):
     stack.push(0, x - y)
 
 
-def qcode_push_vv_plus(procedure, data_stack, stack):
-    #_logger.debug(f"{hex( procedure.get_executed_opcode())} - push+ VV+")
+def qcode_push_vv_plus(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"{hex( procedure.get_executed_opcode())} - push+ VV+")
 
     stack_type = procedure.get_executed_opcode() - 0x28
     pc = procedure.get_program_counter()
@@ -206,8 +209,8 @@ def qcode_push_vv_plus(procedure, data_stack, stack):
         procedure.set_program_counter_delta(8)
     elif stack_type == 3:
         # String
-        stack_val = loader.loader._read_qstr(pc, procedure.procedure["qcode"])
-        #_logger.info(f"VV+ value: {stack_type} {len(stack_val)} {stack_val}")
+        stack_val = loader._read_qstr(pc, procedure.procedure["qcode"])
+        _logger.info(f"VV+ value: {stack_type} {len(stack_val)} {stack_val}")
         procedure.set_program_counter_delta(len(stack_val) + 1)
     else:
         raise('Invalid VV opcode type')
@@ -217,7 +220,7 @@ def qcode_push_vv_plus(procedure, data_stack, stack):
     stack.push(stack_type, stack_val) # Push
 
 
-def qcode_push_vv_long(procedure, data_stack, stack):
+def qcode_push_vv_long(procedure, data_stack: data_stack, stack: stack):
     #print(f"{hex(op_code)} - push& VV!")
 
     vv_val_byte = procedure.read_qcode_byte()
@@ -235,8 +238,8 @@ def qcode_push_vv_long(procedure, data_stack, stack):
     stack.push(1, vv_val) # Push
 
 
-def qcode_push_vv_word_to_long(procedure, data_stack, stack):
-    #_logger.debug(f"{hex(procedure.get_executed_opcode())} - push& VV%")
+def qcode_push_vv_word_to_long(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"{hex(procedure.get_executed_opcode())} - push& VV%")
 
     vv_val_raw = procedure.read_qcode_uint16()
 
@@ -253,8 +256,8 @@ def qcode_push_vv_word_to_long(procedure, data_stack, stack):
     stack.push(1, vv_val) # Push 
 
 
-def qcode_push_vv_word(procedure, data_stack, stack):
-    #_logger.debug("0x4F - push% VV! ($80 to $FF convert to $FF80 to $FFFF)")
+def qcode_push_vv_word(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug("0x4F - push% VV! ($80 to $FF convert to $FF80 to $FFFF)")
 
     # Takes a byte and returns a Word
     vv_val_byte = procedure.read_qcode_byte()
@@ -267,12 +270,12 @@ def qcode_push_vv_word(procedure, data_stack, stack):
     # Convert UInt16 to Int16
     vv_val = STRUCT_FORMAT_INT16.unpack(STRUCT_FORMAT_UINT16.pack(vv_val))[0]
 
-    #_logger.debug(f"push% {vv_val} VV! {vv_val_byte}")
+    _logger.debug(f"push% {vv_val} VV! {vv_val_byte}")
     
     stack.push(0, vv_val) # Push Word
 
 
-def qcode_store_pop1_in_pop2(procedure, data_stack, stack):
+def qcode_store_pop1_in_pop2(procedure, data_stack: data_stack, stack: stack):
     #print(f"{hex(op_code)} - store pop+1 in location with address pop=2")
 
     stack_type = procedure.get_executed_opcode() - 0x84
@@ -293,7 +296,7 @@ def qcode_store_pop1_in_pop2(procedure, data_stack, stack):
                     if i == field_index:
                         database['handler'].current_record[database['vars'][i][1]] = stack_val
                         stored = True
-                        #_logger.debug(f" - Storing {stack_val} to Database {d} field {field_index} {database['vars'][i][1]}")
+                        _logger.debug(f" - Storing {stack_val} to Database {d} field {field_index} {database['vars'][i][1]}")
                         break
                 break
 
@@ -305,7 +308,7 @@ def qcode_store_pop1_in_pop2(procedure, data_stack, stack):
         data_stack.write(stack_type, stack_val, stack_addr)
 
 
-def qcode_push_ee_addr(procedure, data_stack, stack):
+def qcode_push_ee_addr(procedure, data_stack: data_stack, stack: stack):
     #print(f"{hex(op_code)} - push= the address of EE+ [cannot be a parameter]")
 
     ee_ref = procedure.read_qcode_uint16()
@@ -352,7 +355,7 @@ def qcode_push_ee_addr(procedure, data_stack, stack):
     stack.push(4, dsf_offset)
 
 
-def qcode_push_ee_value(procedure, data_stack, stack):
+def qcode_push_ee_value(procedure, data_stack: data_stack, stack: stack):
     #print(f"{hex(op_code)} - push+ the value of EE+")
 
     ee_ref = procedure.read_qcode_uint16()
@@ -410,33 +413,33 @@ def qcode_push_ee_value(procedure, data_stack, stack):
     ee_type = procedure.get_executed_opcode() - 0x08
 
     value = data_stack.read(ee_type, dsf_offset)
-    #_logger.debug(f" - Value: {value} of Type: {ee_type} at DSF Offset: {dsf_offset}")
+    _logger.debug(f" - Value: {value} of Type: {ee_type} at DSF Offset: {dsf_offset}")
 
     stack.push(ee_type, value)
     
 
-def qcode_pop_discard(procedure, data_stack, stack):
-    #_logger.debug(f"{hex(procedure.get_executed_opcode())} - pop+ and discard")
+def qcode_pop_discard(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"{hex(procedure.get_executed_opcode())} - pop+ and discard")
     stack.pop()
 
 
-def qcode_push_word_pop(procedure, data_stack, stack):
-    #_logger.debug(f"{hex(procedure.get_executed_opcode())} - push% value of pop+")
+def qcode_push_word_pop(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"{hex(procedure.get_executed_opcode())} - push% value of pop+")
     stack.push(0, int(stack.pop()))
 
 
-def qcode_push_long_pop(procedure, data_stack, stack):
-    #_logger.debug(f"{hex(procedure.get_executed_opcode())} - push& value of pop+")
+def qcode_push_long_pop(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"{hex(procedure.get_executed_opcode())} - push& value of pop+")
     stack.push(1, int(stack.pop()))
 
 
-def qcode_push_real_pop(procedure, data_stack, stack):
-    #_logger.debug(f"{hex(procedure.get_executed_opcode())} - push* value of pop+")
+def qcode_push_real_pop(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"{hex(procedure.get_executed_opcode())} - push* value of pop+")
     stack.push(2, float(stack.pop()))
 
 
-def qcode_push_ee_array_addr(procedure, data_stack, stack):
-    #_logger.debug(f"{hex(procedure.get_executed_opcode())} - push+ the addr of EE+(pop%)")
+def qcode_push_ee_array_addr(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"{hex(procedure.get_executed_opcode())} - push+ the addr of EE+(pop%)")
 
     ee_ref = procedure.read_qcode_uint16() 
     dsf_offset = -1
@@ -455,7 +458,7 @@ def qcode_push_ee_array_addr(procedure, data_stack, stack):
                 if gd['name'] == gd_name:
                     ref_proc = proc
                     dsf_offset = proc.data_stack_frame_offset + gd['data_stack_frame_offset'] # DSF Offset is for callee Proc
-                    #_logger.debug(f"Found Global Declaration {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
+                    _logger.debug(f"Found Global Declaration {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
                     break
 
             if dsf_offset != -1:
@@ -472,7 +475,7 @@ def qcode_push_ee_array_addr(procedure, data_stack, stack):
                         if gd['name'] == gr_name:
                             ref_proc = proc
                             dsf_offset = proc.data_stack_frame_offset + gd['data_stack_frame_offset'] # DSF Offset is for callee Proc
-                            #_logger.debug(f"Found Global Reference {gr_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
+                            _logger.debug(f"Found Global Reference {gr_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
                             break
                     
                     if dsf_offset != -1:
@@ -511,13 +514,13 @@ def qcode_push_ee_array_addr(procedure, data_stack, stack):
         
         dsf_offset += ((string_length + 1) * array_index) # QStrs have length byte too
 
-    #_logger.debug(f" - Storing DSF Addr {dsf_offset} of EE ref {ee_ref} ({array_index})")
+    _logger.debug(f" - Storing DSF Addr {dsf_offset} of EE ref {ee_ref} ({array_index})")
 
     stack.push(4, dsf_offset)
 
 
-def qcode_addr(procedure, data_stack, stack):
-    #_logger.debug("0x57 0x00 - push% ADDR pop=")
+def qcode_addr(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug("0x57 0x00 - push% ADDR pop=")
 
     # Convert from uint16 addr to int16
     # print(f" - Pushing Addr {addr} to Stack as Word")
@@ -525,19 +528,19 @@ def qcode_addr(procedure, data_stack, stack):
     stack.push(0, stack.pop()) # Push Word
 
 
-def qcode_addr_str(procedure, data_stack, stack):
-    #_logger.debug("0x57 0x1F - push% ADDR pop= (str)")
+def qcode_addr_str(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug("0x57 0x1F - push% ADDR pop= (str)")
 
     # Convert from uint16 addr to int16
     addr = stack.pop() - 1 # String addresses having leading length byte
 
-    #_logger.debug(f" - Pushing Addr {addr} to Stack as Word")
+    _logger.debug(f" - Pushing Addr {addr} to Stack as Word")
     
     stack.push(0, addr) # Push Word
 
 
-def qcode_push_ee_array_val(procedure, data_stack, stack):
-    #_logger.debug(f"{hex(procedure.get_executed_opcode())} - push+ the value of EE+(pop%)")
+def qcode_push_ee_array_val(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"{hex(procedure.get_executed_opcode())} - push+ the value of EE+(pop%)")
 
     ee_ref = procedure.read_qcode_uint16()
     dsf_offset = -1
@@ -555,7 +558,7 @@ def qcode_push_ee_array_val(procedure, data_stack, stack):
                 if gd['name'] == gd_name:
                     ref_proc = proc
                     dsf_offset = proc.data_stack_frame_offset + gd['data_stack_frame_offset'] # DSF Offset is for callee Proc
-                    #_logger.debug(f"Found Global Declaration {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
+                    _logger.debug(f"Found Global Declaration {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
                     break
 
             if dsf_offset != -1:
@@ -572,7 +575,7 @@ def qcode_push_ee_array_val(procedure, data_stack, stack):
                         if gd['name'] == gr_name:
                             ref_proc = proc
                             dsf_offset = proc.data_stack_frame_offset + gd['data_stack_frame_offset'] # DSF Offset is for callee Proc
-                            #_logger.debug(f"Found Global Reference!! {gr_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
+                            _logger.debug(f"Found Global Reference!! {gr_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
                             break
                     
                     if dsf_offset != -1:
@@ -617,6 +620,6 @@ def qcode_push_ee_array_val(procedure, data_stack, stack):
 
     ee_val = data_stack.read(array_type, dsf_offset)
 
-    #_logger.debug(f" - Storing Value {ee_val} DSF Addr {dsf_offset} of EE ref {ee_ref} ({array_index})")
+    _logger.debug(f" - Storing Value {ee_val} DSF Addr {dsf_offset} of EE ref {ee_ref} ({array_index})")
 
     stack.push(array_type, ee_val)

@@ -118,7 +118,7 @@ class DrawableSprite:
                 bitmap_surface = WindowManager.create_surface_from_bitmap_binary(pic_binary, 0)
                 bitmap_set['bitmaps'].append(bitmap_surface)
 
-                #_logger.info(f'Loaded Sprite: {bitmap_surface.get_width()}, {bitmap_surface.get_height()}')
+                _logger.info(f'Loaded Sprite: {bitmap_surface.get_width()}, {bitmap_surface.get_height()}')
 
         sprite.bitmap_sets.append(bitmap_set)
         sprite.timespan_tenths += tenths
@@ -295,7 +295,7 @@ class Window:
 
         # If width & height are passed, save from the current cursor position
 
-        #_logger.info(f"gSAVEBIT - Filename: '{name}'")
+        _logger.info(f"gSAVEBIT - Filename: '{name}'")
 
         f = open(name, "wb")
         f.write("PIC".encode('ASCII'))
@@ -318,8 +318,8 @@ class Window:
         bytepacked_width = data_size
         data_size *= img_height
 
-        #_logger.debug(f"Width: {img_width}, Height = {img_height}")
-        #_logger.debug(f"Data Size: {data_size}, Byte Width = {bytepacked_width}")
+        _logger.debug(f"Width: {img_width}, Height = {img_height}")
+        _logger.debug(f"Data Size: {data_size}, Byte Width = {bytepacked_width}")
 
         # Write out image header (Image 1 - Black Plane)
         f.write(struct.pack("<H", 0))   # CRC of iamge data - Currently ignored
@@ -488,11 +488,11 @@ class Window:
 
     def gGMODE(self, mode):
         self.gGMODE_mode = mode
-        #_logger.debug(f"gGMODE = {mode}")
+        _logger.debug(f"gGMODE = {mode}")
         
     def gTMODE(self, mode):
         self.gTMODE_mode = mode
-        #_logger.debug(f"gTMODE = {mode}")
+        _logger.debug(f"gTMODE = {mode}")
 
     def gVISIBLE(self, mode):
         self.visible = mode
@@ -912,13 +912,13 @@ class WindowManager:
 
         self.executable = executable
 
-        #_logger.info('Initialising Display')
+        _logger.info('Initialising Display')
         self.init_sdl(width, height)
 
         self.default_font = pygame.font.SysFont('arial', 10)
         self.default_font_bold = pygame.font.SysFont('arial', 10, bold=True)
 
-        pygame.display.set_caption(executable.header['source_filename'].split('\\')[-1].replace('\0',''))
+        pygame.display.set_caption(executable.header.source_filename.split('\\')[-1].replace('\0',''))
 
         self.windows = []
         self.gupdate_enabled = True
@@ -955,7 +955,7 @@ class WindowManager:
         b = list(range(1, 9))
         lowest_free = list(window_ids ^ set(b))[0]
 
-        #_logger.info(f"Created new Graphics Window at ID {lowest_free}")
+        _logger.info(f"Created new Graphics Window at ID {lowest_free}")
 
         # Add to the top (highest gRANK) of the window stack
         self.windows.append(Window(
@@ -1022,10 +1022,10 @@ class WindowManager:
         data_offset = bmp_offset + 12 + \
             struct.unpack_from("<L", bytes, bmp_offset + 8)[0]
 
-        #_logger.debug("Creating surface from binary stream")
-        #_logger.debug(f" - Width: {width}")
-        #_logger.debug(f" - Height: {height}")
-        #_logger.debug(f" - Data Offset: {data_offset}")
+        _logger.debug("Creating surface from binary stream")
+        _logger.debug(f" - Width: {width}")
+        _logger.debug(f" - Height: {height}")
+        _logger.debug(f" - Data Offset: {data_offset}")
 
         bitmap_surface = pygame.Surface((width, height))
         bitmap_surface.fill((255,255,255,255))
@@ -1037,7 +1037,7 @@ class WindowManager:
             # The byte width is rounded up to an even number
             byte_width += 1
 
-        #_logger.debug(f"Byte Width: {byte_width}")
+        _logger.debug(f"Byte Width: {byte_width}")
 
         bmp_d_off = data_offset
         for h in range(height):

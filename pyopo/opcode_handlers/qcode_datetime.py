@@ -4,47 +4,50 @@ from pyopo.opl_exceptions import *
 import logging       
 import logging.config   
 
+from pyopo.heap import data_stack
+from pyopo.var_stack import stack
+
 logging.config.fileConfig(fname="logger.conf")
 _logger = logging.getLogger()                            
 #_logger.setLevel(logging.DEBUG)
 
-def qcode_year(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0x1E - YEAR")
+def qcode_year(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0x1E - YEAR")
     stack.push(0, datetime.datetime.now().year)
     
 
-def qcode_month(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0x17 - MONTH")
+def qcode_month(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0x17 - MONTH")
     stack.push(0, datetime.datetime.now().month)
     
 
-def qcode_day(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0x04 - DAY")
+def qcode_day(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0x04 - DAY")
     stack.push(0, datetime.datetime.now().day)
 
 
-def qcode_datetosecs(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0x45 - DATETOSECS")
+def qcode_datetosecs(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0x45 - DATETOSECS")
     stack.push(1, int(datetime.datetime.now().timestamp()))
 
 
-def qcode_hour(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0x12 - HOUR")
+def qcode_hour(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0x12 - HOUR")
     stack.push(0, datetime.datetime.now().hour)
     
 
-def qcode_minute(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0x16 - MINUTE")
+def qcode_minute(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0x16 - MINUTE")
     stack.push(0, datetime.datetime.now().minute)
 
 
-def qcode_second(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0x1C- SECOND")
+def qcode_second(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0x1C- SECOND")
     stack.push(0, datetime.datetime.now().second)
 
 
-def qcode_datim(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0xC1- DATIM$")
+def qcode_datim(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0xC1- DATIM$")
     # Example output: Tue 26 May 1992 13:01:44
 
     datetime_string = datetime.datetime.now().strftime("%a %d %b %Y %H:%M:%S")
@@ -52,8 +55,8 @@ def qcode_datim(procedure, data_stack, stack):
     
     
 
-def qcode_month_str(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0xCD - MONTH$ pop%")
+def qcode_month_str(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0xCD - MONTH$ pop%")
 
     
     months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -66,8 +69,8 @@ def qcode_month_str(procedure, data_stack, stack):
     stack.push(3, months[m-1])
 
 
-def qcode_dayname(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0xC2 - DAYNAME$ pop%1")
+def qcode_dayname(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0xC2 - DAYNAME$ pop%1")
 
     daynames = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
 
@@ -79,8 +82,8 @@ def qcode_dayname(procedure, data_stack, stack):
     stack.push(3, daynames[dow-1])
 
 
-def qcode_days(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0x40 - DAYS pop%3 pop%2 pop%1")
+def qcode_days(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0x40 - DAYS pop%3 pop%2 pop%1")
 
     y = stack.pop()
     m = stack.pop()
@@ -104,8 +107,8 @@ def qcode_days(procedure, data_stack, stack):
     stack.push(0, days)
 
 
-def qcode_secstodate(procedure, data_stack, stack):
-    #_logger.debug(f"0xFB - secstodate pop8 pop%7 pop%6 pop%5 pop%4 pop%3 pop%2 pop%1")
+def qcode_secstodate(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0xFB - secstodate pop8 pop%7 pop%6 pop%5 pop%4 pop%3 pop%2 pop%1")
 
     yrday_addr = stack.pop()
     sc_addr = stack.pop()

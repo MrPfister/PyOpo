@@ -1,4 +1,4 @@
-from pyopo.loader import loader
+from pyopo import pyopo
 import os
 
 
@@ -7,7 +7,7 @@ if __name__=="__main__":
     drive_path = os.path.join(os.path.dirname(str(__file__)), "TESTDRIVE")
     executable_location = os.path.join(os.path.dirname(str(__file__)), "TESTDRIVE\M\APP\\\FAIRWAY.OPA")
 
-    executable = loader.load_executable(executable_location)
+    executable = pyopo.executable.load_executable(executable_location)
 
     # Set where the emulated file system is located
     executable.set_filesystem_path(drive_path)

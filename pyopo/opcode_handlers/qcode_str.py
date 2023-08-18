@@ -1,6 +1,9 @@
 import struct
 import time
 
+from pyopo.heap import data_stack
+from pyopo.var_stack import stack
+
 from pyopo.opl_exceptions import *
 
 import logging       
@@ -10,18 +13,18 @@ logging.config.fileConfig(fname="logger.conf")
 _logger = logging.getLogger()                            
 #_logger.setLevel(logging.DEBUG)
 
-def qcode_val(procedure, data_stack, stack):
-    #_logger.debug("0x57 0x92 - VAL(pop$)")
+def qcode_val(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug("0x57 0x92 - VAL(pop$)")
     stack.push(2, float(stack.pop()))
 
 
-def qcode_chr(procedure, data_stack, stack):
-    #_logger.debug("0x57 0xC0 - CHR$(pop+%1)")
+def qcode_chr(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug("0x57 0xC0 - CHR$(pop+%1)")
     stack.push(3, chr(int(stack.pop())))
 
 
-def qcode_asc(procedure, data_stack, stack):
-    #_logger.debug("0x57 0x01 - ASC(pop$1)")
+def qcode_asc(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug("0x57 0x01 - ASC(pop$1)")
 
     pop_1 = stack.pop()
 
@@ -37,13 +40,13 @@ def qcode_asc(procedure, data_stack, stack):
     stack.push(0, res)
 
 
-def qcode_len(procedure, data_stack, stack):
-    #_logger.debug("0x57 0x14 - LEN(pop$1)")
+def qcode_len(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug("0x57 0x14 - LEN(pop$1)")
     stack.push(0, len(stack.pop()))
 
 
-def qcode_loc(procedure, data_stack, stack):
-    #_logger.debug("0x57 0x15 - push% LOC(pop$2, pop$1)")
+def qcode_loc(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug("0x57 0x15 - push% LOC(pop$2, pop$1)")
 
     # Search is case invariant
     pop_1 = stack.pop().upper()
@@ -58,8 +61,8 @@ def qcode_loc(procedure, data_stack, stack):
     stack.push(0, res)
     
 
-def qcode_left(procedure, data_stack, stack):
-    #_logger.debug("0x57 0xCA - push$ LEFT$(pop$2, pop%1)")
+def qcode_left(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug("0x57 0xCA - push$ LEFT$(pop$2, pop%1)")
 
     """
     Emulator Testing Notes:
@@ -84,8 +87,8 @@ def qcode_left(procedure, data_stack, stack):
     stack.push(3, left)
 
 
-def qcode_rept(procedure, data_stack, stack):
-    #_logger.debug("0x57 0xD0 - push$ REPT$(pop$2, pop%1)")
+def qcode_rept(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug("0x57 0xD0 - push$ REPT$(pop$2, pop%1)")
 
     pop_1 = stack.pop()
     pop_2 = stack.pop()
@@ -97,8 +100,8 @@ def qcode_rept(procedure, data_stack, stack):
     stack.push(3, rept)
 
 
-def qcode_gen(procedure, data_stack, stack):
-    #_logger.debug("0x57 0xC6 - push$ GEN$(pop*2, pop%1)")
+def qcode_gen(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug("0x57 0xC6 - push$ GEN$(pop*2, pop%1)")
 
     y = stack.pop()
     x = stack.pop()
@@ -132,14 +135,14 @@ def qcode_gen(procedure, data_stack, stack):
     stack.push(3, res)
 
 
-def qcode_num(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0xCE - push$ NUM$(pop*2, pop%1)")
+def qcode_num(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0xCE - push$ NUM$(pop*2, pop%1)")
 
     y = stack.pop()
     x = stack.pop()
 
     if abs(x) == x:
-        #_logger.debug(f"{x} is abs(x), ignoring decimal")
+        _logger.debug(f"{x} is abs(x), ignoring decimal")
         x = abs(x)
 
     res = str(int(x))
@@ -156,8 +159,8 @@ def qcode_num(procedure, data_stack, stack):
     stack.push(3, res)
 
 
-def qcode_fix(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0xC5 - push$ FIX$(pop*3, pop%2, pop%1)")
+def qcode_fix(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0xC5 - push$ FIX$(pop*3, pop%2, pop%1)")
 
     z = stack.pop()
     y = stack.pop()
@@ -182,8 +185,8 @@ def qcode_fix(procedure, data_stack, stack):
     stack.push(3, res)
 
     
-def qcode_mid(procedure, data_stack, stack):
-    #_logger.debug("0x57 0xCC - push$ MID$ pop$3 pop%2 pop%1)")
+def qcode_mid(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug("0x57 0xCC - push$ MID$ pop$3 pop%2 pop%1)")
 
     y = stack.pop()
     x = stack.pop()
@@ -197,8 +200,8 @@ def qcode_mid(procedure, data_stack, stack):
     stack.push(3, res)
 
 
-def qcode_right(procedure, data_stack, stack):
-    #_logger.debug("0x57 0xD1 - push$ RIGHT$(pop*2, pop%1)")
+def qcode_right(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug("0x57 0xD1 - push$ RIGHT$(pop*2, pop%1)")
     
     """
     Emulator Testing Notes:
@@ -223,23 +226,23 @@ def qcode_right(procedure, data_stack, stack):
     stack.push(3, right)
 
 
-def qcode_upper(procedure, data_stack, stack):
-    #_logger.debug("0x57 0xD3 - push$ UPPER$ pop$")
+def qcode_upper(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug("0x57 0xD3 - push$ UPPER$ pop$")
     stack.push(3, str(stack.pop()).upper())
 
 
-def qcode_lower(procedure, data_stack, stack):
-    #_logger.debug("0x57 0xCB - push$ LOWER$ pop$")
+def qcode_lower(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug("0x57 0xCB - push$ LOWER$ pop$")
     stack.push(3, str(stack.pop()).lower())
 
 
-def qcode_hex(procedure, data_stack, stack):
-    #_logger.debug("0x57 0xC8 - push$ HEX$ pop&")
+def qcode_hex(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug("0x57 0xC8 - push$ HEX$ pop&")
     stack.push(3, hex(stack.pop()))
 
 
-def qcode_sci(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0xD2 - push$ LOWER$ pop$")
+def qcode_sci(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0xD2 - push$ LOWER$ pop$")
 
     z = stack.pop()
     y = stack.pop()

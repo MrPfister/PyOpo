@@ -3,7 +3,7 @@ import json
 import struct                                                       
 import sys
 
-from typing import Any
+from typing import Any, List
 
 import logging       
 import logging.config   
@@ -18,40 +18,49 @@ logging.logThreads = False
 logging.logProcesses = False
 logging.logMultiprocessing = False
 
-from pyopo.pyopo import executable
 
-import pyopo
+class opo_header:
+    """Combined First and Second header component of a OPO/OPA file
+    """
+    filetype:str = ""
+    opo_version:int = 0
+    second_header_offset:int = 0
+    source_filename:str = ""
+    file_length:int = 0
+    translator_version:int = 0
+    required_runtime_version:int = 0
+    procedure_table_offset:int = 0
+
+
+class embedded_file:
+    """Metadata for embedded files stored within the executable itself
+    """
+    start_offset: int = 0
+    end_offset: int = 0
+    type: str = "???"
+
+    def __init__(
+        self, 
+        start_offset: int = 0, 
+        end_offset: int = 0, 
+        type: str = "???"
+    ):
+        
+        self.start_offset = start_offset
+        self.end_offset = end_offset
+        self.type = type
+
 
 class loader:
     first_proc = True
-
-    @staticmethod
-    def load_executable(
-        file: str
-    ) -> Any:
-
-        binary = None
-        with open(file,"rb") as f:
-            binary = f.read()
-
-        header = loader._readheader(binary)
-
-        embedded_files = []
-        embedded_files_offset = 20 + 1 + len(header["source_filename"])
-        if header["second_header_offset"] != embedded_files_offset:
-            # If the Second Header Offset is more than offset 20 + QStr, then there is embedded files
-            print(f'{embedded_files_offset} vs {header["second_header_offset"]}')
-            embedded_files = loader._readembeddedfiles(binary, embedded_files_offset, header["second_header_offset"])
-
-        procedure_table = loader._read_procedure_table(header["procedure_table_offset"], header["translator_version"], binary, file)
-
-        return executable(file, binary, header, procedure_table, embedded_files)
     
     def _readembeddedfiles(
         binary: bytes,
         embedded_files_offset: int,
         second_header_offset: int
-    ) -> list:
+    ) -> List[embedded_file]:
+        """Read the list of embedded files that are stored between the first and second header in the OPO/OPA file
+        """
          
         file_offset = embedded_files_offset
 
@@ -61,59 +70,57 @@ class loader:
             file_len = struct.unpack_from("<H", binary, file_offset)[0]
             file_offset += 2
 
-            embedded_file_info = {
-                'start_offset': file_offset,
-                'end_offset': file_offset + file_len
-            }
-
             if binary[file_offset:file_offset + 3].decode("utf-8", "replace") == "PIC":
-                embedded_file_info['type'] = 'PIC'
+                embedded_files.append(embedded_file(file_offset, file_offset + file_len, "PIC"))
             elif file_len == 36:
                 # OPA Header Info
-                embedded_file_info['type'] = 'OPA'
+                embedded_files.append(embedded_file(file_offset, file_offset + file_len, "OPA"))
             else:
-                embedded_file_info['type'] = '???'
+                embedded_files.append(embedded_file(file_offset, file_offset + file_len))
 
-            embedded_files.append(embedded_file_info)
             file_offset += file_len
              
-        print(f"{len(embedded_files)} Embedded file(s) found")
-        print(json.dumps(embedded_files, indent=4))
+        _logger.info(f"{len(embedded_files)} Embedded file(s) found")
 
         return embedded_files
 
+
     def _readheader(
         binary: bytes
-    ):
+    ) -> opo_header:
+        """Reads the first and second header of an OPO file.
+        The content between (embedded files) are ignored
+        """
 
-        header = {}
+        header = opo_header()
 
-        header["filetype"] = binary[0:15].decode()
-        if header["filetype"] != "OPLObjectFile**":
-            print(binary[0:15].decode())
+        header.filetype = binary[0:15].decode()
+        if header.filetype != "OPLObjectFile**":
+            _logger.warning(binary[0:15].decode())
             raise ImportError("Not a valid executable")
 
         # First Header
-        header["opo_version"] = struct.unpack_from("<H", binary, 16)[0] # OPO Version (1 - Currently ignored)
-        header["second_header_offset"] = struct.unpack_from("<H", binary, 18)[0]
-        header["source_filename"] = loader._read_qstr(20, binary)
+        header.opo_version = struct.unpack_from("<H", binary, 16)[0] # OPO Version (1 - Currently ignored)
+        header.second_header_offset = struct.unpack_from("<H", binary, 18)[0]
+        header.source_filename = loader._read_qstr(20, binary)
 
-        second_header = struct.unpack_from("<IHHI", binary, header["second_header_offset"])
+        second_header = struct.unpack_from("<IHHI", binary, header.second_header_offset)
 
         # Second Header
-        header["file_length"] = second_header[0]
-        header["translator_version"] = second_header[1]
-        header["required_runtime_version"] = second_header[2]
-        header["procedure_table_offset"] = second_header[3]
+        header.file_length = second_header[0]
+        header.translator_version = second_header[1]
+        header.required_runtime_version = second_header[2]
+        header.procedure_table_offset = second_header[3]
 
         return header
+    
 
     def _read_procedure_table(
         procedure_table_offset: int,
         translator_version: int,
-        binary,
+        binary: bytes,
         src_filename: str
-    ):
+    ) -> List[Any]:
         procedures = []
 
         binary_offset = procedure_table_offset
@@ -143,15 +150,13 @@ class loader:
 
         binary_offset += 2 # QStr + 0 byte to mark end of Procedure Table
 
-        #print(json.dumps(procedures, indent=4))
-
         return procedures
 
     def _read_procedure(
         offset:int,
         translator_version:int,
-        binary
-    ):
+        binary: bytes
+    ) -> List[Any]:
 
         procedure_info = {}
         binary_offset = offset
@@ -245,7 +250,7 @@ class loader:
             })
 
         if loader.first_proc:
-            print(json.dumps(procedure_info['global_references'], indent=4))
+            _logger.info(json.dumps(procedure_info['global_references'], indent=4))
 
         # String Control Section
         procedure_info["string_declarations"] = []
@@ -310,8 +315,7 @@ class loader:
     
     def _read_qstr(
         offset:int,
-
-        buffer
+        buffer: bytes
     ) ->str:
 
         l = buffer[offset]

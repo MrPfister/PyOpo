@@ -1,5 +1,8 @@
 from pyopo import dialog_manager
 
+from pyopo.heap import data_stack
+from pyopo.var_stack import stack
+
 from pyopo.filehandler_filesystem import *
 import logging       
 import logging.config   
@@ -8,8 +11,8 @@ logging.config.fileConfig(fname="logger.conf")
 _logger = logging.getLogger()                            
 #_logger.setLevel(logging.DEBUG)
 
-def qcode_dinit(procedure, data_stack, stack):
-    #_logger.debug(f"0xEC - dINIT")
+def qcode_dinit(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0xEC - dINIT")
 
     arg_count = procedure.read_qcode_byte()
 
@@ -27,8 +30,8 @@ def qcode_dinit(procedure, data_stack, stack):
     procedure.executable.dialog_manager = dialog_manager.Dialog(title, flags)
     
 
-def qcode_dtext(procedure, data_stack, stack):
-    #_logger.debug(f"0xED 0x00 - dTEXT")
+def qcode_dtext(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0xED 0x00 - dTEXT")
 
     arg_count = procedure.read_qcode_byte()
 
@@ -44,8 +47,8 @@ def qcode_dtext(procedure, data_stack, stack):
     procedure.executable.dialog_manager.dTEXT(p, body, text_align)
     
 
-def qcode_dedit_3(procedure, data_stack, stack):
-    #_logger.debug(f"0xED 0x06 - dEDIT pop=3, pop$2, pop%1")
+def qcode_dedit_3(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0xED 0x06 - dEDIT pop=3, pop$2, pop%1")
 
     max_len = stack.pop()
     prompt = stack.pop()
@@ -59,8 +62,8 @@ def qcode_dedit_3(procedure, data_stack, stack):
     procedure.executable.dialog_manager.dEDIT(addr, addr_start_val, prompt, max_len)
 
     
-def qcode_dlong(procedure, data_stack, stack):
-    #_logger.debug(f"0xED 0x02 - dLONG pop=4, pop$3, pop&2 pop&1")
+def qcode_dlong(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0xED 0x02 - dLONG pop=4, pop$3, pop&2 pop&1")
 
     max = stack.pop()
     min = stack.pop()
@@ -75,8 +78,8 @@ def qcode_dlong(procedure, data_stack, stack):
     procedure.executable.dialog_manager.dLONG(addr, addr_start_val, prompt, min, max)
 
 
-def qcode_dfloat(procedure, data_stack, stack):
-    #_logger.debug(f"0xED 0x03 - dFLOAT pop=4, pop$3, pop&2 pop&1")
+def qcode_dfloat(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0xED 0x03 - dFLOAT pop=4, pop$3, pop&2 pop&1")
 
     max = stack.pop()
     min = stack.pop()
@@ -91,8 +94,8 @@ def qcode_dfloat(procedure, data_stack, stack):
     procedure.executable.dialog_manager.dFLOAT(addr, addr_start_val, prompt, min, max)
 
 
-def qcode_dedit_2(procedure, data_stack, stack):
-    #_logger.debug(f"0xED 0x06 - dEDIT pop=2, pop$1")
+def qcode_dedit_2(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0xED 0x06 - dEDIT pop=2, pop$1")
 
     prompt = stack.pop()
     addr = stack.pop()
@@ -105,8 +108,8 @@ def qcode_dedit_2(procedure, data_stack, stack):
     procedure.executable.dialog_manager.dEDIT(addr, addr_start_val, prompt, 255)
 
 
-def qcode_dchoice(procedure, data_stack, stack):
-    #_logger.debug(f"0xED 0x01 - dCHOICE pop=3, pop$2, pop$1")
+def qcode_dchoice(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0xED 0x01 - dCHOICE pop=3, pop$2, pop$1")
 
     choice_list = stack.pop()
     prompt = stack.pop()
@@ -120,8 +123,8 @@ def qcode_dchoice(procedure, data_stack, stack):
     procedure.executable.dialog_manager.dCHOICE(addr, addr_start_val, prompt, choice_list)
 
 
-def qcode_dfile(procedure, data_stack, stack):
-    #_logger.debug(f"0xED 0x09 - dFILE pop=3, pop$2, pop%1")
+def qcode_dfile(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0xED 0x09 - dFILE pop=3, pop$2, pop%1")
 
     flags = stack.pop()
     prompt = stack.pop()
@@ -141,8 +144,8 @@ def qcode_dfile(procedure, data_stack, stack):
 
     procedure.executable.dialog_manager.dFILE(addr, addr_start_val, file_selection, prompt, flags)
 
-def qcode_dbuttons(procedure, data_stack, stack):
-    #_logger.debug(f"0xED 0x0A - dBUTTONS")
+def qcode_dbuttons(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0xED 0x0A - dBUTTONS")
 
     arg_count = procedure.read_qcode_byte()
 
@@ -155,14 +158,14 @@ def qcode_dbuttons(procedure, data_stack, stack):
     procedure.executable.dialog_manager.dBUTTONS(buttons)
 
 
-def qcode_dialog(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0x37 - DIALOG")
+def qcode_dialog(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0x37 - DIALOG")
 
     procedure.executable.dialog_manager.DIALOG()
 
 
-def qcode_dposition(procedure, data_stack, stack):
-    #_logger.debug(f"0xED 0x08 - dPOSITION  pop%2, pop%1")
+def qcode_dposition(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0xED 0x08 - dPOSITION  pop%2, pop%1")
 
     y = stack.pop()
     x = stack.pop()
@@ -172,7 +175,7 @@ def qcode_dposition(procedure, data_stack, stack):
     procedure.executable.dialog_manager.dPOSITION(x, y)
 
 
-def qcode_alert(procedure, data_stack, stack):
+def qcode_alert(procedure, data_stack: data_stack, stack: stack):
     print(f"0x57 0x38 - ALERT")
 
     n = procedure.read_qcode_byte()

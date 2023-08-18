@@ -7,6 +7,10 @@ from pyopo.filehandler_filesystem import *
 import logging       
 import logging.config   
 
+
+from pyopo.heap import data_stack
+from pyopo.var_stack import stack
+
 logging.config.fileConfig(fname="logger.conf")
 _logger = logging.getLogger()                            
 #_logger.setLevel(logging.DEBUG)
@@ -14,8 +18,8 @@ _logger = logging.getLogger()
 SPECIAL_IO_HANDLES = ['TIM:']
 
 
-def qcode_dir(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0xC3 - push$ DIR$ pop$")
+def qcode_dir(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0xC3 - push$ DIR$ pop$")
 
     d = stack.pop()
 
@@ -38,15 +42,15 @@ def qcode_dir(procedure, data_stack, stack):
     stack.push(3, dir_response)
 
 
-def qcode_trap(procedure, data_stack, stack):
-    #_logger.debug(f"0xBC - TRAP")
+def qcode_trap(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0xBC - TRAP")
 
     # Not used by itself, sets the trap flag for the follow on command
     procedure.set_trap(True)
 
 
-def qcode_setpath(procedure, data_stack, stack):
-    #_logger.debug(f"0xFA - SETPATH pop$1")
+def qcode_setpath(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0xFA - SETPATH pop$1")
 
     new_path = stack.pop()
 
@@ -58,8 +62,8 @@ def qcode_setpath(procedure, data_stack, stack):
     input()
 
 
-def qcode_mkdir(procedure, data_stack, stack):
-    #_logger.debug(f"0xF8 - MKDIR pop$1")
+def qcode_mkdir(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0xF8 - MKDIR pop$1")
 
     d = stack.pop()
 
@@ -71,8 +75,8 @@ def qcode_mkdir(procedure, data_stack, stack):
     procedure.set_trap(False)
 
 
-def qcode_exist(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0x08 - push% EXIST pop$")
+def qcode_exist(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0x08 - push% EXIST pop$")
 
     d = stack.pop()
 
@@ -85,7 +89,7 @@ def qcode_exist(procedure, data_stack, stack):
     stack.push(0, exists)  # False
 
 
-def qcode_delete_file(procedure, data_stack, stack):
+def qcode_delete_file(procedure, data_stack: data_stack, stack: stack):
     print(f"0xA7 - DELETE pop$")
 
     d = stack.pop()
@@ -99,7 +103,7 @@ def qcode_delete_file(procedure, data_stack, stack):
     procedure.set_trap(False)
 
 
-def qcode_ioa(procedure, data_stack, stack):
+def qcode_ioa(procedure, data_stack: data_stack, stack: stack):
     print(f"0x57 0x0B - IOA")
 
     # handle%,func%,var status%,var arg1,var arg2
@@ -137,7 +141,7 @@ def qcode_ioa(procedure, data_stack, stack):
     stack.push(0, ret)
 
 
-def qcode_iowaitstat(procedure, data_stack, stack):
+def qcode_iowaitstat(procedure, data_stack: data_stack, stack: stack):
     print(f"0xE8 - IOWAITSTAT")
 
     status_addr = stack.pop()
@@ -158,18 +162,18 @@ def qcode_iowaitstat(procedure, data_stack, stack):
         input()
 
 
-def qcode_iosignal(procedure, data_stack, stack):
+def qcode_iosignal(procedure, data_stack: data_stack, stack: stack):
     print(f"0xB7 - IOSIGNAL")
 
     print(f" - IOSIGNAL - STUB")
 
 
-def qcode_iowait(procedure, data_stack, stack):
-    #_logger.debug("0x57 0x11 - IOWAIT - STUB")
+def qcode_iowait(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug("0x57 0x11 - IOWAIT - STUB")
     pass
 
 
-def qcode_ioopen(procedure, data_stack, stack):
+def qcode_ioopen(procedure, data_stack: data_stack, stack: stack):
     print(f"0x57 0x0D- push% IOOPEN pop_ADDR%,pop$,pop%1")
 
     # ret%=IOOPEN(var handle%,name$,mode%)
@@ -277,8 +281,8 @@ def qcode_ioopen(procedure, data_stack, stack):
     stack.push(0, ret)
 
 
-def qcode_ioread(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0x0F - push% IOREAD pop%,pop%,pop%)")
+def qcode_ioread(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0x0F - push% IOREAD pop%,pop%,pop%)")
 
     maxlen = stack.pop()
     addr = stack.pop()
@@ -310,8 +314,8 @@ def qcode_ioread(procedure, data_stack, stack):
         input()
 
 
-def qcode_iowrite(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0x0E - push% IOWRITE pop%,pop%,pop%)")
+def qcode_iowrite(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0x0E - push% IOWRITE pop%,pop%,pop%)")
 
     write_len = stack.pop()
     addr = stack.pop()
@@ -334,8 +338,8 @@ def qcode_iowrite(procedure, data_stack, stack):
     stack.push(0, ret)
 
 
-def qcode_ioclose(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0x10 - push% IOCLOSE pop%")
+def qcode_ioclose(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0x10 - push% IOCLOSE pop%")
 
     handle = stack.pop()
 
@@ -356,8 +360,8 @@ def qcode_ioclose(procedure, data_stack, stack):
     stack.push(0, ret)
 
 
-def qcode_ioseek(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0x21 - push% IOSEEK pop%")
+def qcode_ioseek(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0x21 - push% IOSEEK pop%")
 
     offset_addr = stack.pop()
     mode = stack.pop()

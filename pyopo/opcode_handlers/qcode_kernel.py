@@ -8,6 +8,10 @@ from pyopo.filehandler_filesystem import *
 import logging       
 import logging.config   
 
+
+from pyopo.heap import data_stack
+from pyopo.var_stack import stack
+
 logging.config.fileConfig(fname="logger.conf")
 _logger = logging.getLogger()                            
 #_logger.setLevel(logging.DEBUG)
@@ -50,8 +54,8 @@ HwGetScanCodes = {
     pygame.K_UP:    (8, 0x20), # Up
 }
 
-def qcode_OS(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0x35 - OS")
+def qcode_OS(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0x35 - OS")
 
     # N Format
     arg_count = int(procedure.read_qcode_byte())
@@ -63,13 +67,13 @@ def qcode_OS(procedure, data_stack, stack):
     addr_1 = stack.pop()
     i = stack.pop()
 
-    #_logger.debug(f" - OS {hex(i)}, {addr_1}, {addr_2}")
+    _logger.debug(f" - OS {hex(i)}, {addr_1}, {addr_2}")
 
     if i == 0x87:
-        #_logger.debug(f' - OS Call 0x87 - carried out automatically for OPL programs - Not Implemented')
+        _logger.debug(f' - OS Call 0x87 - carried out automatically for OPL programs - Not Implemented')
         pass
     elif i == 0x88:
-        #_logger.debug(f' - OS Call 0x88 - ProcSetPriority ProcID={addr_1} - Not Implemented')
+        _logger.debug(f' - OS Call 0x88 - ProcSetPriority ProcID={addr_1} - Not Implemented')
         pass
     elif i == 0x8B:
         # General Services
@@ -79,13 +83,13 @@ def qcode_OS(procedure, data_stack, stack):
 
         pass
     elif i == 0x8D:
-        #_logger.debug("- OS Call - Window Server")
+        _logger.debug("- OS Call - Window Server")
 
         if arg_count == 2:
-            #_logger.debug(f" - wEndRedraw of window handle {addr_1} - Not Implemented")
+            _logger.debug(f" - wEndRedraw of window handle {addr_1} - Not Implemented")
             pass
     elif i == 0x8E:
-        #_logger.debug(" - Hardware Control 0x8E  - Not Implemented")
+        _logger.debug(" - Hardware Control 0x8E  - Not Implemented")
         pass
     else:
         #_logger.warning(f'OS Call Not implemented - STUB')
@@ -95,8 +99,8 @@ def qcode_OS(procedure, data_stack, stack):
     stack.push(0, 0)
 
 
-def qcode_call(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0x02 - CALL")
+def qcode_call(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0x02 - CALL")
 
     # N FOrmat
     arg_count = int(procedure.read_qcode_byte())
@@ -108,26 +112,26 @@ def qcode_call(procedure, data_stack, stack):
     for i in range(arg_count):
         args.append(stack.pop())
 
-    #_logger.debug(f" - CALL {arg_count} arguments - CALL({args})")
+    _logger.debug(f" - CALL {arg_count} arguments - CALL({args})")
 
     # Go through known high level Calls
     if args[-1] == 0x0189:
         # Fn $89 Sub $01
         # TimSleepForTicks fails
-        #_logger.debug("CALL 0x0189: - TimSleepForTicks fails")
+        _logger.debug("CALL 0x0189: - TimSleepForTicks fails")
         
         time.sleep(1.0 / TICKS_PER_SECOND * args[0])
         stack.push(0, 0)
     elif args[-1] == 0x0C88:
         # Fn $88 Sub $0C
         # ProcRename fails
-        #_logger.debug("CALL 0x0C88: - ProcRename - Not Implemented")
+        _logger.debug("CALL 0x0C88: - ProcRename - Not Implemented")
 
         stack.push(0, 0)
     elif args[-1] == 0x058B:
         # Fn $8B Sub $05
         # GenGetCountryData
-        #_logger.debug("CALL 0x058B: - GenGetCountryData")
+        _logger.debug("CALL 0x058B: - GenGetCountryData")
 
         """
         GenGetCountryData
@@ -200,7 +204,7 @@ def qcode_call(procedure, data_stack, stack):
     elif args[-1] == 0x118E:
         # Fn $8E Sub $11
         # HwGetSupplyStatus
-        #_logger.debug("CALL 0x118E: - HwGetSupplyStatus")
+        _logger.debug("CALL 0x118E: - HwGetSupplyStatus")
 
         """
         HwGetSupplyStatus
@@ -230,14 +234,14 @@ def qcode_call(procedure, data_stack, stack):
     elif args[-1] == 0x1b8B:
         # Fn $8B Sub $1B
         # GenGetLanguageCode
-        #_logger.debug("CALL 0x1b8B: - GenGetLanguageCode")
+        _logger.debug("CALL 0x1b8B: - GenGetLanguageCode")
         
         stack.push(0, 1) # English - UK
 
     elif args[-1] == 0x1C8E:
         # Fn $8E Sub $1C
         # HwSupplyWarnings
-        #_logger.debug("CALL 0x1C8E: - HwSupplyWarnings")
+        _logger.debug("CALL 0x1C8E: - HwSupplyWarnings")
 
         """
 
@@ -328,50 +332,50 @@ def qcode_call(procedure, data_stack, stack):
         stack.push(0, 0)
 
     elif args[-1] == 0x6C8D:
-        #_logger.info("CALL 0x6c8d: - Send Machine Switch On Event - Not Implemented")
+        _logger.info("CALL 0x6c8d: - Send Machine Switch On Event - Not Implemented")
         stack.push(0, 0)
         
     elif args[-1] == 0x0F8B:
         # Fn $8B Sub $0F
         # GenGetSoundFlags
-        #_logger.info("CALL 0x108B: - GenGetSoundFlags")
+        _logger.info("CALL 0x108B: - GenGetSoundFlags")
         
         # Bit 15: set=disable all sound
         stack.push(0, 0)
     elif args[-1] == 0x108B:
-        #_logger.debug("CALL 0x108B: - GenSetSoundFlags")
+        _logger.debug("CALL 0x108B: - GenSetSoundFlags")
         
-        #_logger.debug(f"GenSetSoundFlags -> {args[-2]}")
+        _logger.debug(f"GenSetSoundFlags -> {args[-2]}")
         stack.push(0, 0)
     elif args[-1] == 0x138E:
-        #_logger.debug("CALL 0x138E: - HwReadLcdContrast")
+        _logger.debug("CALL 0x138E: - HwReadLcdContrast")
         stack.push(0, 8) # 50%
     elif args[-1] == 0x198D and args[-2] == 100:
-        #_logger.debug("CALL 0x198d, 100: - Send App to foreground - Not Implemented")
+        _logger.debug("CALL 0x198d, 100: - Send App to foreground - Not Implemented")
         stack.push(0, 0)
     elif args[-1] == 0x198D and args[-2] == 0:
-        #_logger.debug("CALL 0x198d, 100: - Send App to background - Not Implemented")
+        _logger.debug("CALL 0x198d, 100: - Send App to background - Not Implemented")
         stack.push(0, 0)
     elif args[-1] == 0x138B:
-        #_logger.debug("CALL 0x138b: - Unmark App as Active - Not Implemented")
+        _logger.debug("CALL 0x138b: - Unmark App as Active - Not Implemented")
         stack.push(0, 0)
     elif args[-1] == 0x1E86:
-        #_logger.debug("CALL 0x1E86: - Async playback of WVE - Not Implemented")
+        _logger.debug("CALL 0x1E86: - Async playback of WVE - Not Implemented")
         stack.push(0, 0)
     elif args[-1] == 0x1F86:
-        #_logger.debug("CALL 0x1F86: - Sync playback of WVE - Not Implemented")
+        _logger.debug("CALL 0x1F86: - Sync playback of WVE - Not Implemented")
         stack.push(0, 0)
     elif args[-1] == 0x2186:
-        #_logger.debug("CALL 0x2186: - Async record of WVE - Not Implemented")
+        _logger.debug("CALL 0x2186: - Async record of WVE - Not Implemented")
         stack.push(0, 0)
     elif args[-1] == 0x2386:
-        #_logger.debug("CALL 0x2386: - Cancel record of WVE - Not Implemented")
+        _logger.debug("CALL 0x2386: - Cancel record of WVE - Not Implemented")
         stack.push(0, 0)
     elif args[-1] == 0x2286:
-        #_logger.debug("CALL 0x2286: - Sync record of WVE - Not Implemented")
+        _logger.debug("CALL 0x2286: - Sync record of WVE - Not Implemented")
         stack.push(0, 0)
     elif args[-1] == 0x2086:
-        #_logger.debug("CALL 0x2086: - Cancel playback of WVE - Not Implemented")
+        _logger.debug("CALL 0x2086: - Cancel playback of WVE - Not Implemented")
         stack.push(0, 0)
     elif args[-1] == 0x5F8D:
         # gSetOpenAddress
@@ -379,14 +383,14 @@ def qcode_call(procedure, data_stack, stack):
         cx=args[-3] # file offset low  word ??? it's declared as ULONG 
         dx=args[-4] # file offset high word ??? it's declared as ULONG
         
-        #_logger.debug(f"CALL 0x5F8D: - gSetOpenAddress({bx}, {cx}, {dx})")
+        _logger.debug(f"CALL 0x5F8D: - gSetOpenAddress({bx}, {cx}, {dx})")
         procedure.executable.window_manager.gSetOpenAddress(bx, cx, dx)
          
         stack.push(0, 0)
     elif args[-1] == 0x288E:
         # Fn $8E Sub $28: HwGetScanCodes
         addr = args[-2]
-        #_logger.debug(f"CALL 0x288E, {addr}: - HwGetScanCodes - Keyboard Scan")
+        _logger.debug(f"CALL 0x288E, {addr}: - HwGetScanCodes - Keyboard Scan")
 
         buffer = [0] * 10
         # Instead of looking at the last key press (key down event), see which keys are currently down state

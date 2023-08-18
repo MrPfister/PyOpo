@@ -8,6 +8,8 @@ import pygame
 from pygame.locals import *
 from typing import Optional, Any, Self
 
+from .loader import *
+
 
 from .opcodes import *
 from .window_manager import WindowManager
@@ -16,6 +18,8 @@ from .filehandler_dbf import *
 from .filehandler_filesystem import *
 
 from .hals import *
+
+from .heap import *
 
 # Debuggers
 from .debugger.debugger_dsf import DebuggerDSF
@@ -48,8 +52,8 @@ class executable:
     def __init__(
         self,
         file: str,
-        binary,
-        header,
+        binary: bytes,
+        header: opo_header,
         procedure_table,
         embedded_files
     ):
@@ -120,6 +124,31 @@ class executable:
             'm8': 0.0,
             'm9': 0.0
         }
+
+    
+    @staticmethod
+    def load_executable(
+        file: str
+    ) -> Self:
+        """Loads a .OPO or .OPA file, returning its runtime environment
+        """
+
+        binary = None
+        with open(file,"rb") as f:
+            binary = f.read()
+
+        header = loader._readheader(binary)
+
+        embedded_files = []
+        embedded_files_offset = 20 + 1 + len(header.source_filename)
+        if header.second_header_offset != embedded_files_offset:
+            # If the Second Header Offset is more than offset 20 + QStr, then there is embedded files
+            _logger.info(f'{embedded_files_offset} vs {header.second_header_offset}')
+            embedded_files = loader._readembeddedfiles(binary, embedded_files_offset, header.second_header_offset)
+
+        procedure_table = loader._read_procedure_table(header.procedure_table_offset, header.translator_version, binary, file)
+
+        return executable(file, binary, header, procedure_table, embedded_files)
 
 
     def set_filesystem_path(self, path: str) -> None:
@@ -192,7 +221,7 @@ class executable:
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    #_logger.info("User has triggered App exit")
+                    _logger.info("User has triggered App exit")
                     pygame.quit()
                     return
 
@@ -205,11 +234,11 @@ class executable:
                     # Translate certain keys
                     if event.key in KEY_TRANSLATION:
                         # Left Alt = MENU
-                        #_logger.info(f" - Translating {pygame.key.name(event.key)} to {KEY_TRANSLATION[event.key]}")
+                        _logger.info(f" - Translating {pygame.key.name(event.key)} to {KEY_TRANSLATION[event.key]}")
                         self.last_keypress = KEY_TRANSLATION[event.key]
                     elif event.key < 255:
                         # Only store the values of the keys that are in range
-                        #_logger.info(f"A key has been pressed: {event.key}")
+                        _logger.info(f"A key has been pressed: {event.key}")
                         self.last_keypress = event.key
                     else:
                         continue
@@ -219,7 +248,7 @@ class executable:
 
                         if event.key == pygame.K_ESCAPE:
                             # Exit the dialog
-                            #_logger.info("User has quit the dialog, not saving results")
+                            _logger.info("User has quit the dialog, not saving results")
                             self.stack.push(0, 0)
 
                             self.dialog_manager = None  # Clean up dialog
@@ -231,7 +260,7 @@ class executable:
                         elif event.key == pygame.K_RETURN or event.key in self.dialog_manager.get_button_keycodes():
                             # Exit the dialog
 
-                            #_logger.debug("Store results of dialog")
+                            _logger.debug("Store results of dialog")
                             dialog_return_val = self.dialog_manager.handle_DIALOG(
                                 self.data_stack)
 
@@ -254,7 +283,7 @@ class executable:
 
                         if event.key == pygame.K_ESCAPE:
                             # Exit the dialog
-                            #_logger.info("User has quit the menu, not saving results")
+                            _logger.info("User has quit the menu, not saving results")
                             self.stack.push(0, 0)
 
                             self.menu_manager = None  # Clean up menu
@@ -264,7 +293,7 @@ class executable:
                         elif event.key == pygame.K_RETURN:
                             # Exit the menu
 
-                            #_logger.info("Store results of menu")
+                            _logger.info("Store results of menu")
                             menu_return_val = self.menu_manager.handle_MENU()
 
                             # Add the char of the selected menu option
@@ -282,10 +311,10 @@ class executable:
 
                         # Push the last character to the stack for consumption
                         if self.get_await_str:
-                            #_logger.debug(f" - GET$ = {self.last_keypress}")
+                            _logger.debug(f" - GET$ = {self.last_keypress}")
                             self.stack.push(3, chr(self.last_keypress))
                         else:
-                            #_logger.debug(f" - GET = {self.last_keypress}")
+                            _logger.debug(f" - GET = {self.last_keypress}")
                             self.stack.push(0, self.last_keypress)
 
                         self.last_keypress = 0
@@ -324,7 +353,7 @@ class executable:
                 # The execution resulted in flags being set
 
                 if self.proc_stack[-1].flag_stop:
-                    #_logger.info(" - User has requested application STOP")
+                    _logger.info(" - User has requested application STOP")
                     break
                 elif self.proc_stack[-1].flag_callproc:
                     # The Callee Procedure has flagged it is calling another procedure
@@ -367,10 +396,10 @@ class executable:
                     self.proc_stack.pop()
 
                     if len(self.proc_stack) == 0:
-                        #_logger.info("Application has completed execution")
+                        _logger.info("Application has completed execution")
                         break
 
-                    #_logger.info(f" - Returning execution to PROC {self.proc_stack[-1].procedure['name']}")
+                    _logger.info(f" - Returning execution to PROC {self.proc_stack[-1].procedure['name']}")
                 else:
                     # Other Flag occured
                     break
@@ -430,66 +459,6 @@ class executable:
         self.databases.remove(active_db)
 
 
-class stack:
-    # 0 - Int16 - Word
-    # 1 - Int32 - Long
-    # 2 - 64bit - Float
-    # 3 - QStr
-    # 4 - Addr
-
-    def __init__(
-        self
-    ):
-
-        self.stack_frame = []
-
-    def pop(
-        self
-    ):
-
-        assert len(self.stack_frame) > 0
-
-        return self.stack_frame.pop()[1]
-    
-
-    def pop_2(
-        self
-    ):
-        
-        assert len(self.stack_frame) > 1
-
-        b = self.stack_frame.pop()[1]
-        a = self.stack_frame.pop()[1]
-        return (a, b)
-    
-
-    def pop_with_type(
-        self
-    ):
-
-        assert len(self.stack_frame) > 0
-
-        return self.stack_frame.pop()
-
-    def push(
-        self,
-        type,
-        value
-    ):
-        
-        assert value is not None
-        assert type is not None
-        assert type>=0 and type<=4
-
-        self.stack_frame.append((type, value))
-
-    def peek(
-        self
-    ):
-
-        return self.stack_frame[-1]
-
-
 class stack_entry:
     def __init__(
         self,
@@ -523,7 +492,7 @@ class stack_entry:
         # Error Handling
         self.error_handler_offset = 0
 
-        #_logger.info(f"Adding PROC {self.procedure['name']}: to the stack for execution")
+        _logger.info(f"Adding PROC {self.procedure['name']}: to the stack for execution")
 
         # Allocate Procedure Memory
         self.data_stack_frame_offset = self.executable.data_stack.allocate_frame(
@@ -613,7 +582,7 @@ class stack_entry:
     def execute_instruction(self):
         if self._program_counter >= self.procedure["qcode_len"]:
             # Finished execution of the procedure by hitting the end of the QCode
-            #_logger.info("Procedure Execution Complete")
+            _logger.info("Procedure Execution Complete")
             self.flag_return = True
             return True
 
@@ -628,7 +597,7 @@ class stack_entry:
         if op_code == 0x53:
             # Call a procedure
             ee = self.read_qcode_uint16()
-            #_logger.info(f" - PROCEDURE CALL! EE Ref {ee}")
+            _logger.info(f" - PROCEDURE CALL! EE Ref {ee}")
 
             matches = list(
                 filter(lambda p: p['ee'] == ee, self.procedure["called_procedures"]))
@@ -638,14 +607,14 @@ class stack_entry:
                 return True
 
             self.flag_callproc = matches[0]['name']
-            #_logger.info(f" - Calling PROC {self.flag_callproc}:")
+            _logger.info(f" - Calling PROC {self.flag_callproc}:")
 
             return True
         elif op_code == 0x6B:
             # @(...) operator - Call a procedure
             args = self.read_qcode_byte()
             return_type =  self.read_qcode_byte()
-            #_logger.info(f"Return Type: {return_type}")
+            _logger.info(f"Return Type: {return_type}")
 
             for i in range(args):
                 # Retrieve the arguments
@@ -661,7 +630,7 @@ class stack_entry:
                 # Floats don't have a return type character as they do not have a symbol
                 self.flag_callproc += chr(return_type)
 
-            #_logger.info(f" - Calling @ PROC {self.flag_callproc}(args = {args}) Return type = {return_type}:")
+            _logger.info(f" - Calling @ PROC {self.flag_callproc}(args = {args}) Return type = {return_type}:")
 
             return True
 
@@ -669,12 +638,12 @@ class stack_entry:
             # Opcode subset with 0x57 hint
             opcode_hint = 0x57
             op_code = int(self.procedure["qcode"][self._program_counter])
-            #_logger.debug(f"Opcode: 0x57 {hex(op_code)} - {self._program_counter} / {self.procedure['qcode_len']}")
+            _logger.debug(f"Opcode: 0x57 {hex(op_code)} - {self._program_counter} / {self.procedure['qcode_len']}")
             self._program_counter += 1
 
             op_code_handler = opcode_0x57_handler.get(op_code)
         elif op_code in [0x74, 0x75, 0x76, 0x77]:
-            #_logger.info(' - 0x74 - 0x77 RETURN called')
+            _logger.info(' - 0x74 - 0x77 RETURN called')
 
             # Store default values (none provided)
             if op_code == 0x74:
@@ -689,14 +658,14 @@ class stack_entry:
             self.flag_return = True
             return True
         elif op_code == 0xC0:
-            #_logger.info(f" - 0xCO RETURN pop+ called - {self._program_counter} / {self.procedure['qcode_len']} / {len(self.executable.stack.stack_frame)}")
+            _logger.info(f" - 0xCO RETURN pop+ called - {self._program_counter} / {self.procedure['qcode_len']} / {len(self.executable.stack.stack_frame)}")
             self.flag_return = True
             return True
         elif op_code == 0xED:
             # Opcode subset with 0xED hint
             opcode_hint = 0xED
             op_code = int(self.procedure["qcode"][self._program_counter])
-            #_logger.debug(f"Opcode: 0xED {hex(op_code)} - {self._program_counter} / {self.procedure['qcode_len']} / {len(self.executable.stack.stack_frame)}")
+            _logger.debug(f"Opcode: 0xED {hex(op_code)} - {self._program_counter} / {self.procedure['qcode_len']} / {len(self.executable.stack.stack_frame)}")
             self._program_counter += 1
 
             op_code_handler = opcode_0xED_handler.get(op_code)
@@ -705,7 +674,7 @@ class stack_entry:
             # Opcode subset with 0xFF hint
             opcode_hint = 0xFF
             op_code = int(self.procedure["qcode"][self._program_counter])
-            #_logger.debug(f"Opcode: 0xFF {hex(op_code)} - {self._program_counter} / {self.procedure['qcode_len']} / {len(self.executable.stack.stack_frame)}")
+            _logger.debug(f"Opcode: 0xFF {hex(op_code)} - {self._program_counter} / {self.procedure['qcode_len']} / {len(self.executable.stack.stack_frame)}")
             self._program_counter += 1
 
             op_code_handler = opcode_0xFF_handler.get(op_code)
@@ -713,7 +682,7 @@ class stack_entry:
         elif op_code in opcode_handler:
             # Execute the Opcode
 
-            #_logger.debug(f"Opcode: {hex(op_code)} - {self._program_counter} / {self.procedure['qcode_len']} / {len(self.executable.stack.stack_frame)}")
+            _logger.debug(f"Opcode: {hex(op_code)} - {self._program_counter} / {self.procedure['qcode_len']} / {len(self.executable.stack.stack_frame)}")
             op_code_handler = opcode_handler[op_code]
 
         if op_code_handler:
@@ -740,159 +709,3 @@ class stack_entry:
 
         return self.flag_stop
 
-
-class data_stack:
-    def __init__(
-        self,
-        size: int,
-        debugger: Optional[DebuggerDSF] = None
-    ):
-        
-        # Cache struct pack
-        self._struct_unpacker_uint16 = struct.Struct("<H")
-        self._struct_unpacker_int16 = struct.Struct("<h")
-        self._struct_unpacker_float = struct.Struct("<d")
-        self._struct_unpacker_long = struct.Struct("<i")
-
-        self.free_blocks = [{
-            "start": 0,
-            "length": size,
-            "end": size - 1
-        }]
-
-        self.frames = []
-
-        # Underlying memory
-        self.memory = bytearray(size)
-
-        self.debugger = debugger
-
-    def allocate_frame(
-        self,
-        size: int
-    ):
-
-        # Find free block within the data stack
-        free_block_index = -1
-        for i in range(len(self.free_blocks)):
-            if self.free_blocks[i]["length"] >= size:
-                free_block_index = i
-                break
-
-        if free_block_index == -1:
-            raise ("No available memory")
-
-        # Construct Data Stack Frame
-        entry = {
-            "size": size,
-            "offset": self.free_blocks[free_block_index]["start"]
-        }
-        #_logger.info(f"Allocating DSF Size: {size} at Offset: {entry['offset']}")
-
-        if self.debugger:
-            self.debugger.store_alloc_block(entry['offset'], entry['offset'] + entry['size'])
-
-        if self.free_blocks[free_block_index]["length"] == size:
-            # Remove block
-            self.free_blocks.pop(free_block_index)
-        else:
-            # Resize block
-            self.free_blocks[free_block_index]["start"] += size
-            self.free_blocks[free_block_index]["length"] -= size
-
-        self.frames.append(entry)
-
-        # Reinitialise the frame
-        self.memory[entry["offset"]:entry["offset"] +
-                    entry["size"]] = b'\x00' * entry["size"]
-
-        return entry["offset"]
-
-    def free_frame(
-        self,
-        offset: int
-    ):
-
-        block_index = -1
-        for i in range(len(self.frames)):
-            if self.frames[i]["offset"] >= offset:
-                block_index = i
-                break
-
-        if block_index == -1:
-            #_logger.warning(f'DSF Frame not found, Offset: {offset} in frames {self.frames}')
-            #raise ("Data Stack Frame entry not found")
-            return
-        
-        if self.debugger:
-            self.debugger.free_alloc_block(offset, offset + self.frames[block_index]["size"])
-            self.debugger.free_proc_vars(offset, offset + self.frames[block_index]["size"])
-
-        self.free_blocks.append({
-            "start": offset,
-            "length": self.frames[block_index]["size"],
-            "end": offset + self.frames[block_index]["size"] - 1
-        })
-
-        self.frames.pop(block_index)
-
-    def write(
-        self,
-        type,
-        value,
-        offset
-    ):
-
-        if type == 0:
-            # 2 Byte Word
-            data_bytes = self._struct_unpacker_int16.pack(value)
-        elif type == 1:
-            # 4 Byte Long
-            data_bytes = self._struct_unpacker_long.pack(value)
-        elif type == 2:
-            # Float
-            data_bytes = self._struct_unpacker_float.pack(value)
-        elif type == 3:
-            # QStr
-            data_bytes = bytearray([len(value)]) + value.encode('utf-8')
-        elif type == 4:
-            # 2 byte unsigned word (addr)
-            data_bytes = self._struct_unpacker_uint16.pack(value)
-        else:
-            raise ('Invalid data type - dsf write')
-        
-        if self.debugger:
-            self.debugger.store_var(type,offset, 'Unknown', value, len(data_bytes) )
-
-        # Update memory in place
-        self.memory[offset:offset+len(data_bytes)] = data_bytes
-
-    def read(
-        self,
-        type,
-        offset,
-        array_index=1  # OPL arrays start at 1
-    ) -> Any:
-
-        if type == 0:
-            # 2 Byte Word
-            return self._struct_unpacker_int16.unpack_from(self.memory, offset + 2 * (array_index - 1))[0]
-        elif type == 1:
-            # 4 Byte Long
-            return self._struct_unpacker_long.unpack_from(self.memory, offset + 4 * (array_index - 1))[0]
-        elif type == 2:
-            # 8 Byte Float
-            return self._struct_unpacker_float.unpack_from(self.memory, offset + 8 * (array_index - 1))[0]
-        elif type == 3:
-
-            # Read the string control entry on maximum length
-            string_length = self.memory[offset - 1]
-
-            # QStr (read the current length)
-            l = self.memory[offset + string_length * (array_index - 1)]
-            if l == 0:
-                return ""
-
-            return self.memory[offset+1 + string_length * (array_index - 1):offset+1 + string_length * (array_index - 1)+l].decode("utf-8", "replace")
-
-        raise ('Invalid data type - dsf read')

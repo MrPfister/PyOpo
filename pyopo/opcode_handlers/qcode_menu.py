@@ -3,19 +3,22 @@ import logging.config
 
 from pyopo import menu_manager
 
+from pyopo.heap import data_stack
+from pyopo.var_stack import stack
+
 logging.config.fileConfig(fname="logger.conf")
 _logger = logging.getLogger()                            
 #_logger.setLevel(logging.DEBUG)
 
-def qcode_minit(procedure, data_stack, stack):
-    #_logger.debug(f"0xEA - mINIT")
+def qcode_minit(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0xEA - mINIT")
 
     # Initialise new Menu
     procedure.executable.menu_manager = menu_manager.Menu()
     
 
-def qcode_mcard(procedure, data_stack, stack):
-    #_logger.debug(f"0xEB - mCARD")
+def qcode_mcard(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0xEB - mCARD")
 
     arg_count = procedure.read_qcode_byte()
 
@@ -37,8 +40,8 @@ def qcode_mcard(procedure, data_stack, stack):
     procedure.executable.menu_manager.mCARD(mcard_title, mcard_items)
 
 
-def qcode_menu_var(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0x3A - MENU pop%")
+def qcode_menu_var(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0x3A - MENU pop%")
 
     dsf_offset = stack.pop()
     value = data_stack.read(0, dsf_offset)
@@ -52,7 +55,7 @@ def qcode_menu_var(procedure, data_stack, stack):
     procedure.executable.menu_manager.MENU(mcard_index,item_index)
 
 
-def qcode_menu(procedure, data_stack, stack):
-    #_logger.debug(f"0x57 0x36 - MENU")
+def qcode_menu(procedure, data_stack: data_stack, stack: stack):
+    _logger.debug(f"0x57 0x36 - MENU")
     
     procedure.executable.menu_manager.MENU(0,0)

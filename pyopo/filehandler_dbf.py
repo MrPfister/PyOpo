@@ -103,15 +103,15 @@ class dbf:
 
 
     def load(self):
-        #_logger.debug(f" - Loading DBF File: {self.translated_Filename}")
+        _logger.debug(f" - Loading DBF File: {self.translated_Filename}")
         with open(self.translated_Filename,"rb") as file:
             self.binary = file.read()
 
         self.header =  dbf_header.from_bytes(self.binary)
         self.records = self.read_records()
 
-        #_logger.debug(json.dumps(self.header, indent=2))
-        #_logger.debug(json.dumps(self.records, indent=2))
+        _logger.debug(json.dumps(self.header, indent=2))
+        _logger.debug(json.dumps(self.records, indent=2))
 
         input()
 
@@ -155,11 +155,11 @@ class dbf:
         data_portion_size_binary = format(data_portion_size, "016b")
         data_record_type_binary = format(data_record_type, "08b")
 
-        #_logger.debug(data_portion_size_binary)
-        #_logger.debug(data_record_type_binary)
+        _logger.debug(data_portion_size_binary)
+        _logger.debug(data_record_type_binary)
 
         header = data_record_type_binary[-4:] + data_portion_size_binary[-12:]
-        #_logger.debug(header)
+        _logger.debug(header)
 
         header_bytes = self.bitstring_to_bytes(header)
 
@@ -195,8 +195,8 @@ class dbf:
             record["data_size"] = int('0000' + header_bits[4:15], 2)
             record["data_record_type"] = int('0000' + header_bits[0:3],2)
 
-            #_logger.debug(f"Data Size: {record['data_size']}")
-            #_logger.debug(f"Data Type: {record['data_record_type']}")
+            _logger.debug(f"Data Size: {record['data_size']}")
+            _logger.debug(f"Data Type: {record['data_record_type']}")
 
             record["record_data_bytes"] = self.binary[offset + 2:record["data_size"]]
 
@@ -210,7 +210,7 @@ class dbf:
             # Field Information Record
 
             for b in len(record["record_data_bytes"]):
-                #_logger.debug(record["record_data_bytes"][b])
+                _logger.debug(record["record_data_bytes"][b])
                 pass
 
             pass
