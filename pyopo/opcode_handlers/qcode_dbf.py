@@ -1,5 +1,3 @@
-import struct
-import time
 import logging
 import logging.config
 
