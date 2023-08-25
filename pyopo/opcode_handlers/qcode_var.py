@@ -1,8 +1,8 @@
 import struct
 from pyopo.opl_exceptions import *
 
-import logging       
-import logging.config   
+import logging
+import logging.config
 
 from pyopo.heap import data_stack
 from pyopo.var_stack import stack
@@ -10,12 +10,13 @@ from pyopo.var_stack import stack
 from pyopo.loader import loader
 
 logging.config.fileConfig(fname="logger.conf")
-_logger = logging.getLogger()                            
-#_logger.setLevel(logging.DEBUG)  
+_logger = logging.getLogger()
+# _logger.setLevel(logging.DEBUG)
 
 # Precompile struct bytepack formats
 STRUCT_FORMAT_UINT16 = struct.Struct("<H")
 STRUCT_FORMAT_INT16 = struct.Struct("<h")
+
 
 def qcode_push_var(procedure, data_stack: data_stack, stack: stack):
     dsf_offset = procedure.data_stack_frame_offset + procedure.read_qcode_uint16()
@@ -25,139 +26,153 @@ def qcode_push_var(procedure, data_stack: data_stack, stack: stack):
 
     value = data_stack.read(op_code, dsf_offset)
 
-    _logger.debug(f"{hex(op_code)} - push+ {value} of Type: {op_code} at LL+ DSF Offset: {dsf_offset}")
+    _logger.debug(
+        f"{hex(op_code)} - push+ {value} of Type: {op_code} at LL+ DSF Offset: {dsf_offset}"
+    )
 
     stack.push(op_code, value)
-    
+
 
 def qcode_push_addr_array(procedure, data_stack: data_stack, stack: stack):
-    #print(f"{hex(op_code)} - push+ the addr of LL+(pop%)")
+    # print(f"{hex(op_code)} - push+ the addr of LL+(pop%)")
 
     array_type = procedure.get_executed_opcode() - 0x14
-    
+
     offset = procedure.read_qcode_uint16()
     dsf_offset = procedure.data_stack_frame_offset + offset
-    array_index = stack.pop() - 1 # OPL indexes start at 1
+    array_index = stack.pop() - 1  # OPL indexes start at 1
 
     if array_type == 0:
         # Word Array
-        dsf_offset += (2 * array_index)
+        dsf_offset += 2 * array_index
     elif array_type == 1:
         # Long Array
-        dsf_offset += (4 * array_index)
+        dsf_offset += 4 * array_index
     elif array_type == 2:
         # Float Array
-        dsf_offset += (8 * array_index)
+        dsf_offset += 8 * array_index
     elif array_type == 3:
         # String Array
 
         # Determine string length from the procedure string section
         string_length = -1
         for declared_string in procedure.procedure["string_declarations"]:
-            if declared_string['data_stack_frame_offset'] == offset - 1:
-                string_length = declared_string['length']
+            if declared_string["data_stack_frame_offset"] == offset - 1:
+                string_length = declared_string["length"]
                 break
 
         if string_length == -1:
-            raise('Unable to determine string length')
+            raise ("Unable to determine string length")
 
-        dsf_offset += ((string_length + 1) * array_index) # QStrs have length byte too
+        dsf_offset += (string_length + 1) * array_index  # QStrs have length byte too
 
-    #print(f" - Type: {array_type} at DSF Offset: {dsf_offset} Array Offset: {array_index}")
+    # print(f" - Type: {array_type} at DSF Offset: {dsf_offset} Array Offset: {array_index}")
 
     stack.push(4, dsf_offset)
-    
+
 
 def qcode_push_addr_field(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"{hex(procedure.get_executed_opcode())} - push= the address of field pop$+ of data file D")
+    _logger.debug(
+        f"{hex(procedure.get_executed_opcode())} - push= the address of field pop$+ of data file D"
+    )
 
     array_type = procedure.get_executed_opcode() - 0x24
 
-    d = procedure.read_qcode_byte() # DBF D Byte
+    d = procedure.read_qcode_byte()  # DBF D Byte
 
     var_name = stack.pop()
 
     dsf_offset = -1
     for database in procedure.executable.databases:
-        if database['d'] == d:
-            for i in range(len(database['vars'])):
-                if database['vars'][i][1]==var_name:
+        if database["d"] == d:
+            for i in range(len(database["vars"])):
+                if database["vars"][i][1] == var_name:
                     # Found var, calculate psuedo address
                     # Database addreses are beyond regular addrs
                     dsf_offset = 1024 * 1024 + 1024 * d + i
                     break
 
     if dsf_offset == -1:
-        raise('Error finding var ref')
+        raise ("Error finding var ref")
 
     _logger.info(f" - Calculated Pseudo DSF offset for Database = {dsf_offset}")
     stack.push(4, dsf_offset)
 
 
 def qcode_push_value_field(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"{hex(procedure.get_executed_opcode())} - push= the value of field pop$+ of data file D")
-    
-    d = procedure.read_qcode_byte() # DBF D Byte
+    _logger.debug(
+        f"{hex(procedure.get_executed_opcode())} - push= the value of field pop$+ of data file D"
+    )
+
+    d = procedure.read_qcode_byte()  # DBF D Byte
 
     var_name = stack.pop()
 
     found_db_field = False
     for database in procedure.executable.databases:
-        if database['d'] == d:
+        if database["d"] == d:
             _logger.debug(f"Found DB: {d}")
-            for i in range(len(database['vars'])):
-                if database['vars'][i][1]==var_name:
-                    _logger.debug('Found DB Field Var')
-                    db_field_val = database['handler'].current_record[database['vars'][i][1]]
-                    db_field_type = database['vars'][i][0]
-                    
-                    _logger.debug(f'Found DB Field Var {var_name} of value {db_field_val} of type {db_field_type}')
-                    
+            for i in range(len(database["vars"])):
+                if database["vars"][i][1] == var_name:
+                    _logger.debug("Found DB Field Var")
+                    db_field_val = database["handler"].current_record[
+                        database["vars"][i][1]
+                    ]
+                    db_field_type = database["vars"][i][0]
+
+                    _logger.debug(
+                        f"Found DB Field Var {var_name} of value {db_field_val} of type {db_field_type}"
+                    )
+
                     stack.push(db_field_type, db_field_val)
                     found_db_field = True
                     break
 
     if not found_db_field:
-        #_logger.warning(f"DB {d} var name: {var_name} Field not found")
-        raise("DB Field var not found")
+        # _logger.warning(f"DB {d} var name: {var_name} Field not found")
+        raise ("DB Field var not found")
 
 
 def qcode_push_var_array(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"{hex(procedure.get_executed_opcode())} - push+ the value of LL+(pop%)")
+    _logger.debug(
+        f"{hex(procedure.get_executed_opcode())} - push+ the value of LL+(pop%)"
+    )
 
     array_type = procedure.get_executed_opcode() - 0x10
 
     offset = procedure.read_qcode_uint16()
     dsf_offset = procedure.data_stack_frame_offset + offset
-    array_index = stack.pop() - 1 # OPL Indexes start at 1
+    array_index = stack.pop() - 1  # OPL Indexes start at 1
 
-    _logger.debug(f"Type: {array_type} at DSF Offset: {dsf_offset} Array Offset: {array_index}")
+    _logger.debug(
+        f"Type: {array_type} at DSF Offset: {dsf_offset} Array Offset: {array_index}"
+    )
 
     if array_type == 0:
         # Word Array
-        dsf_offset += (2 * array_index)
+        dsf_offset += 2 * array_index
     elif array_type == 1:
         # Long Array
-        dsf_offset += (4 * array_index)
+        dsf_offset += 4 * array_index
     elif array_type == 2:
         # Float Array
-        dsf_offset += (8 * array_index)
+        dsf_offset += 8 * array_index
     elif array_type == 3:
         # String Array
-         
+
         string_length = -1
         for declared_string in procedure.procedure["string_declarations"]:
-            if declared_string['data_stack_frame_offset'] == offset - 1:
-                string_length = declared_string['length']
+            if declared_string["data_stack_frame_offset"] == offset - 1:
+                string_length = declared_string["length"]
                 break
 
         if string_length == -1:
-            raise('Unable to determine string length')
-            
-        dsf_offset += ((string_length + 1) * array_index) # QStrs have length byte too
+            raise ("Unable to determine string length")
+
+        dsf_offset += (string_length + 1) * array_index  # QStrs have length byte too
 
     value = data_stack.read(array_type, dsf_offset)
-    #print(f" - Value: {value} of Type: {array_type} at DSF Offset: {dsf_offset} Array Offset: {array_index}")
+    # print(f" - Value: {value} of Type: {array_type} at DSF Offset: {dsf_offset} Array Offset: {array_index}")
 
     stack.push(array_type, value)
 
@@ -169,7 +184,7 @@ def qcode_push_addr(procedure, data_stack: data_stack, stack: stack):
 
     _logger.debug(f" -  DSF Offset: {dsf_offset}")
 
-    stack.push(4, dsf_offset) # Push 
+    stack.push(4, dsf_offset)  # Push
 
 
 def qcode_uadd(procedure, data_stack: data_stack, stack: stack):
@@ -179,7 +194,7 @@ def qcode_uadd(procedure, data_stack: data_stack, stack: stack):
     y = STRUCT_FORMAT_UINT16.unpack_from(STRUCT_FORMAT_INT16.pack(stack.pop()))[0]
     x = STRUCT_FORMAT_UINT16.unpack_from(STRUCT_FORMAT_INT16.pack(stack.pop()))[0]
     stack.push(0, x + y)
-    
+
 
 def qcode_usub(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0x51 - push= USUB pop%2 pop%1")
@@ -213,15 +228,15 @@ def qcode_push_vv_plus(procedure, data_stack: data_stack, stack: stack):
         _logger.info(f"VV+ value: {stack_type} {len(stack_val)} {stack_val}")
         procedure.set_program_counter_delta(len(stack_val) + 1)
     else:
-        raise('Invalid VV opcode type')
+        raise ("Invalid VV opcode type")
 
     # print(f" -  Stack Type: {stack_type} Value: {stack_val}")
 
-    stack.push(stack_type, stack_val) # Push
+    stack.push(stack_type, stack_val)  # Push
 
 
 def qcode_push_vv_long(procedure, data_stack: data_stack, stack: stack):
-    #print(f"{hex(op_code)} - push& VV!")
+    # print(f"{hex(op_code)} - push& VV!")
 
     vv_val_byte = procedure.read_qcode_byte()
 
@@ -233,9 +248,9 @@ def qcode_push_vv_long(procedure, data_stack: data_stack, stack: stack):
     # Convert UInt32 to Int32
     vv_val = struct.unpack("<i", struct.pack("<I", vv_val))[0]
 
-    #print(f" -  push& {vv_val} VV! {vv_val_byte}")
+    # print(f" -  push& {vv_val} VV! {vv_val_byte}")
 
-    stack.push(1, vv_val) # Push
+    stack.push(1, vv_val)  # Push
 
 
 def qcode_push_vv_word_to_long(procedure, data_stack: data_stack, stack: stack):
@@ -251,9 +266,9 @@ def qcode_push_vv_word_to_long(procedure, data_stack: data_stack, stack: stack):
     # Convert UInt32 to Int32
     vv_val = struct.unpack("<i", struct.pack("<I", vv_val))[0]
 
-    #print(f" -  push& {vv_val} VV% {vv_val_raw}")
+    # print(f" -  push& {vv_val} VV% {vv_val_raw}")
 
-    stack.push(1, vv_val) # Push 
+    stack.push(1, vv_val)  # Push
 
 
 def qcode_push_vv_word(procedure, data_stack: data_stack, stack: stack):
@@ -271,12 +286,12 @@ def qcode_push_vv_word(procedure, data_stack: data_stack, stack: stack):
     vv_val = STRUCT_FORMAT_INT16.unpack(STRUCT_FORMAT_UINT16.pack(vv_val))[0]
 
     _logger.debug(f"push% {vv_val} VV! {vv_val_byte}")
-    
-    stack.push(0, vv_val) # Push Word
+
+    stack.push(0, vv_val)  # Push Word
 
 
 def qcode_store_pop1_in_pop2(procedure, data_stack: data_stack, stack: stack):
-    #print(f"{hex(op_code)} - store pop+1 in location with address pop=2")
+    # print(f"{hex(op_code)} - store pop+1 in location with address pop=2")
 
     stack_type = procedure.get_executed_opcode() - 0x84
 
@@ -285,31 +300,35 @@ def qcode_store_pop1_in_pop2(procedure, data_stack: data_stack, stack: stack):
 
     if stack_addr >= 1024 * 1024:
         # Database
-        stack_addr -= 1024*1024
+        stack_addr -= 1024 * 1024
         d = int(stack_addr / 1024)
-        field_index = stack_addr - 1024* d
+        field_index = stack_addr - 1024 * d
 
         stored = False
         for database in procedure.executable.databases:
-            if database['d'] == d:
-                for i in range(len(database['vars'])):
+            if database["d"] == d:
+                for i in range(len(database["vars"])):
                     if i == field_index:
-                        database['handler'].current_record[database['vars'][i][1]] = stack_val
+                        database["handler"].current_record[
+                            database["vars"][i][1]
+                        ] = stack_val
                         stored = True
-                        _logger.debug(f" - Storing {stack_val} to Database {d} field {field_index} {database['vars'][i][1]}")
+                        _logger.debug(
+                            f" - Storing {stack_val} to Database {d} field {field_index} {database['vars'][i][1]}"
+                        )
                         break
                 break
 
         if not stored:
-            raise("Error: Unable to store Field Value")
+            raise ("Error: Unable to store Field Value")
 
     else:
-        #print(f" - Storing {stack_val} to DSF Addr {stack_addr}")
+        # print(f" - Storing {stack_val} to DSF Addr {stack_addr}")
         data_stack.write(stack_type, stack_val, stack_addr)
 
 
 def qcode_push_ee_addr(procedure, data_stack: data_stack, stack: stack):
-    #print(f"{hex(op_code)} - push= the address of EE+ [cannot be a parameter]")
+    # print(f"{hex(op_code)} - push= the address of EE+ [cannot be a parameter]")
 
     ee_ref = procedure.read_qcode_uint16()
     dsf_offset = -1
@@ -317,46 +336,50 @@ def qcode_push_ee_addr(procedure, data_stack: data_stack, stack: stack):
     # Attempt to find the EE
     gd_entry = procedure.procedure["cached_gd"].get(ee_ref)
     if gd_entry:
-        gd_name = gd_entry['name']
+        gd_name = gd_entry["name"]
 
         # Check the first instance in the DS
         for proc in procedure.executable.proc_stack:
             for gd in proc.procedure["global_declarations"]:
-                if gd['name'] == gd_name:
-                    dsf_offset = proc.data_stack_frame_offset + gd['data_stack_frame_offset'] # DSF Offset is for callee Proc
-                    #print(f"Found Global Reference {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
+                if gd["name"] == gd_name:
+                    dsf_offset = (
+                        proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
+                    )  # DSF Offset is for callee Proc
+                    # print(f"Found Global Reference {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
                     break
 
             if dsf_offset != -1:
                 break
-    
+
     if dsf_offset == -1:
         gr_entry = procedure.procedure["cached_gr"].get(ee_ref)
         if gr_entry:
-            gr_name = gr_entry['name']
+            gr_name = gr_entry["name"]
 
             # Find which procedure declared it
             for proc in procedure.executable.proc_stack:
                 for gd in proc.procedure["global_declarations"]:
-                    if gd['name'] == gr_name:
-                        dsf_offset = proc.data_stack_frame_offset + gd['data_stack_frame_offset'] # DSF Offset is for callee Proc
-                        #print(f"Found Global Reference {gr_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
+                    if gd["name"] == gr_name:
+                        dsf_offset = (
+                            proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
+                        )  # DSF Offset is for callee Proc
+                        # print(f"Found Global Reference {gr_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
                         break
-                
+
                 if dsf_offset != -1:
                     break
 
     if dsf_offset == -1:
-        raise(f'Unable to find EE value: {ee_ref}')
+        raise (f"Unable to find EE value: {ee_ref}")
 
     # print(f" - max EE ref: {procedure.procedure['max_ee_ref']}")
-    #print(f" - Storing DSF Addr {dsf_offset} of EE ref {ee_ref}")
+    # print(f" - Storing DSF Addr {dsf_offset} of EE ref {ee_ref}")
 
     stack.push(4, dsf_offset)
 
 
 def qcode_push_ee_value(procedure, data_stack: data_stack, stack: stack):
-    #print(f"{hex(op_code)} - push+ the value of EE+")
+    # print(f"{hex(op_code)} - push+ the value of EE+")
 
     ee_ref = procedure.read_qcode_uint16()
     dsf_offset = -1
@@ -364,51 +387,55 @@ def qcode_push_ee_value(procedure, data_stack: data_stack, stack: stack):
     # Attempt to find the EE
     gd_entry = procedure.procedure["cached_gd"].get(ee_ref)
     if gd_entry:
-        gd_name = gd_entry['name']
+        gd_name = gd_entry["name"]
 
         # Check the first instance in the DS
         for proc in procedure.executable.proc_stack:
             for gd in proc.procedure["global_declarations"]:
-                if gd['name'] == gd_name:
-                    dsf_offset = proc.data_stack_frame_offset + gd['data_stack_frame_offset'] # DSF Offset is for callee Proc
-                    #print(f"Found Global Reference {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
+                if gd["name"] == gd_name:
+                    dsf_offset = (
+                        proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
+                    )  # DSF Offset is for callee Proc
+                    # print(f"Found Global Reference {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
                     break
 
             if dsf_offset != -1:
                 break
-    
+
     if dsf_offset == -1:
         gr_entry = procedure.procedure["cached_gr"].get(ee_ref)
         if gr_entry:
-            gr_name = gr_entry['name']
+            gr_name = gr_entry["name"]
 
             # Find which procedure declared it
             for proc in procedure.executable.proc_stack:
                 for gd in proc.procedure["global_declarations"]:
-                    if gd['name'] == gr_name:
-                        dsf_offset = proc.data_stack_frame_offset + gd['data_stack_frame_offset'] # DSF Offset is for callee Proc
-                        #print(f"Found Global Reference {gr_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
+                    if gd["name"] == gr_name:
+                        dsf_offset = (
+                            proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
+                        )  # DSF Offset is for callee Proc
+                        # print(f"Found Global Reference {gr_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
                         break
-                
+
                 if dsf_offset != -1:
                     break
 
     if dsf_offset == -1:
         for param in procedure.procedure["parameters"]:
-            if param['ee'] == ee_ref:
+            if param["ee"] == ee_ref:
                 # Params are read only
 
-                #print(param)
-                #print(f" - Value: { param['value']} of Type: {param['type']} at EE Ref: {ee_ref}")
+                # print(param)
+                # print(f" - Value: { param['value']} of Type: {param['type']} at EE Ref: {ee_ref}")
 
-                stack.push(param['type'], param['value'])
+                stack.push(param["type"], param["value"])
                 return
-            
+
     if dsf_offset == -1:
-        raise(f'Unable to find EE ref: {ee_ref}')
-    
+        raise (f"Unable to find EE ref: {ee_ref}")
+
     # print(f" - max EE ref: {procedure.procedure['max_ee_ref']}")
-    #print(f" - Retrieving value for DSF Addr {dsf_offset} of EE ref {ee_ref}")
+    # print(f" - Retrieving value for DSF Addr {dsf_offset} of EE ref {ee_ref}")
 
     ee_type = procedure.get_executed_opcode() - 0x08
 
@@ -416,7 +443,7 @@ def qcode_push_ee_value(procedure, data_stack: data_stack, stack: stack):
     _logger.debug(f" - Value: {value} of Type: {ee_type} at DSF Offset: {dsf_offset}")
 
     stack.push(ee_type, value)
-    
+
 
 def qcode_pop_discard(procedure, data_stack: data_stack, stack: stack):
     _logger.debug(f"{hex(procedure.get_executed_opcode())} - pop+ and discard")
@@ -439,82 +466,98 @@ def qcode_push_real_pop(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_push_ee_array_addr(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"{hex(procedure.get_executed_opcode())} - push+ the addr of EE+(pop%)")
+    _logger.debug(
+        f"{hex(procedure.get_executed_opcode())} - push+ the addr of EE+(pop%)"
+    )
 
-    ee_ref = procedure.read_qcode_uint16() 
+    ee_ref = procedure.read_qcode_uint16()
     dsf_offset = -1
 
     ref_proc = None
 
     # Attempt to find the EE
-    
+
     gd_entry = procedure.procedure["cached_gd"].get(ee_ref)
     if gd_entry:
-        gd_name = gd_entry['name']
+        gd_name = gd_entry["name"]
 
         # Check the first instance in the DS
         for proc in procedure.executable.proc_stack:
             for gd in proc.procedure["global_declarations"]:
-                if gd['name'] == gd_name:
+                if gd["name"] == gd_name:
                     ref_proc = proc
-                    dsf_offset = proc.data_stack_frame_offset + gd['data_stack_frame_offset'] # DSF Offset is for callee Proc
-                    _logger.debug(f"Found Global Declaration {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
+                    dsf_offset = (
+                        proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
+                    )  # DSF Offset is for callee Proc
+                    _logger.debug(
+                        f"Found Global Declaration {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}"
+                    )
                     break
 
             if dsf_offset != -1:
                 break
-    
+
     if dsf_offset == -1:
         for gr in procedure.procedure["global_references"]:
-            if gr['ee'] == ee_ref:
-                gr_name = gr['name']
+            if gr["ee"] == ee_ref:
+                gr_name = gr["name"]
 
                 # Find which procedure declared it
                 for proc in procedure.executable.proc_stack:
                     for gd in proc.procedure["global_declarations"]:
-                        if gd['name'] == gr_name:
+                        if gd["name"] == gr_name:
                             ref_proc = proc
-                            dsf_offset = proc.data_stack_frame_offset + gd['data_stack_frame_offset'] # DSF Offset is for callee Proc
-                            _logger.debug(f"Found Global Reference {gr_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
+                            dsf_offset = (
+                                proc.data_stack_frame_offset
+                                + gd["data_stack_frame_offset"]
+                            )  # DSF Offset is for callee Proc
+                            _logger.debug(
+                                f"Found Global Reference {gr_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}"
+                            )
                             break
-                    
+
                     if dsf_offset != -1:
                         break
 
                 break
 
     if dsf_offset == -1:
-        raise(f'Unable to find EE Ref: {ee_ref}')
+        raise (f"Unable to find EE Ref: {ee_ref}")
 
     # print(f" - max EE ref: {procedure.procedure['max_ee_ref']}")
 
     array_type = procedure.get_executed_opcode() - 0x1C
-    array_index = stack.pop() - 1 # OPL addresses start at 1
+    array_index = stack.pop() - 1  # OPL addresses start at 1
 
     if array_type == 0:
         # Word Array
-        dsf_offset += (2 * array_index)
+        dsf_offset += 2 * array_index
     elif array_type == 1:
         # Long Array
-        dsf_offset += (4 * array_index)
+        dsf_offset += 4 * array_index
     elif array_type == 2:
         # Float Array
-        dsf_offset += (8 * array_index)
+        dsf_offset += 8 * array_index
     elif array_type == 3:
         # String Array
 
         string_length = -1
         for declared_string in ref_proc.procedure["string_declarations"]:
-            if declared_string['data_stack_frame_offset'] == dsf_offset - ref_proc.data_stack_frame_offset - 1:
-                string_length = declared_string['length']
+            if (
+                declared_string["data_stack_frame_offset"]
+                == dsf_offset - ref_proc.data_stack_frame_offset - 1
+            ):
+                string_length = declared_string["length"]
                 break
 
         if string_length == -1:
-            raise('Unable to determine string length')
-        
-        dsf_offset += ((string_length + 1) * array_index) # QStrs have length byte too
+            raise ("Unable to determine string length")
 
-    _logger.debug(f" - Storing DSF Addr {dsf_offset} of EE ref {ee_ref} ({array_index})")
+        dsf_offset += (string_length + 1) * array_index  # QStrs have length byte too
+
+    _logger.debug(
+        f" - Storing DSF Addr {dsf_offset} of EE ref {ee_ref} ({array_index})"
+    )
 
     stack.push(4, dsf_offset)
 
@@ -524,102 +567,122 @@ def qcode_addr(procedure, data_stack: data_stack, stack: stack):
 
     # Convert from uint16 addr to int16
     # print(f" - Pushing Addr {addr} to Stack as Word")
-    
-    stack.push(0, stack.pop()) # Push Word
+
+    stack.push(0, stack.pop())  # Push Word
 
 
 def qcode_addr_str(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0x1F - push% ADDR pop= (str)")
 
     # Convert from uint16 addr to int16
-    addr = stack.pop() - 1 # String addresses having leading length byte
+    addr = stack.pop() - 1  # String addresses having leading length byte
 
     _logger.debug(f" - Pushing Addr {addr} to Stack as Word")
-    
-    stack.push(0, addr) # Push Word
+
+    stack.push(0, addr)  # Push Word
 
 
 def qcode_push_ee_array_val(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"{hex(procedure.get_executed_opcode())} - push+ the value of EE+(pop%)")
+    _logger.debug(
+        f"{hex(procedure.get_executed_opcode())} - push+ the value of EE+(pop%)"
+    )
 
     ee_ref = procedure.read_qcode_uint16()
     dsf_offset = -1
     ref_proc = None
 
     # Attempt to find the EE
-    gd_list = list(filter(lambda gd: gd['ee'] == ee_ref, procedure.procedure["global_declarations"]))
+    gd_list = list(
+        filter(
+            lambda gd: gd["ee"] == ee_ref, procedure.procedure["global_declarations"]
+        )
+    )
     if len(gd_list) > 0:
         gd = gd_list[-1]
-        gd_name = gd['name']
+        gd_name = gd["name"]
 
         # Check the first instance in the DS
         for proc in procedure.executable.proc_stack:
             for gd in proc.procedure["global_declarations"]:
-                if gd['name'] == gd_name:
+                if gd["name"] == gd_name:
                     ref_proc = proc
-                    dsf_offset = proc.data_stack_frame_offset + gd['data_stack_frame_offset'] # DSF Offset is for callee Proc
-                    _logger.debug(f"Found Global Declaration {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
+                    dsf_offset = (
+                        proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
+                    )  # DSF Offset is for callee Proc
+                    _logger.debug(
+                        f"Found Global Declaration {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}"
+                    )
                     break
 
             if dsf_offset != -1:
                 break
-    
+
     if dsf_offset == -1:
         for gr in procedure.procedure["global_references"]:
-            if gr['ee'] == ee_ref:
-                gr_name = gr['name']
+            if gr["ee"] == ee_ref:
+                gr_name = gr["name"]
 
                 # Find which procedure declared it
                 for proc in procedure.executable.proc_stack:
                     for gd in proc.procedure["global_declarations"]:
-                        if gd['name'] == gr_name:
+                        if gd["name"] == gr_name:
                             ref_proc = proc
-                            dsf_offset = proc.data_stack_frame_offset + gd['data_stack_frame_offset'] # DSF Offset is for callee Proc
-                            _logger.debug(f"Found Global Reference!! {gr_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
+                            dsf_offset = (
+                                proc.data_stack_frame_offset
+                                + gd["data_stack_frame_offset"]
+                            )  # DSF Offset is for callee Proc
+                            _logger.debug(
+                                f"Found Global Reference!! {gr_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}"
+                            )
                             break
-                    
+
                     if dsf_offset != -1:
                         break
 
                 break
 
     if dsf_offset == -1:
-        #_logger.warning(f'Unable to determine EE ref: {ee_ref}')
-        raise(f'Unable to determine EE ref: {ee_ref}')
+        # _logger.warning(f'Unable to determine EE ref: {ee_ref}')
+        raise (f"Unable to determine EE ref: {ee_ref}")
 
     array_type = procedure.get_executed_opcode() - 0x18
-    array_index = stack.pop() - 1 # OPL indexes start at 1
+    array_index = stack.pop() - 1  # OPL indexes start at 1
 
     if array_index < 0:
-        #_logger.warning(f'Error: push_ee_array_val Array Index {array_index} out of bounds!')
-        raise(KErrOutOfRange)
+        # _logger.warning(f'Error: push_ee_array_val Array Index {array_index} out of bounds!')
+        raise (KErrOutOfRange)
 
     if array_type == 0:
         # Word Array
-        dsf_offset += (2 * array_index)
-        
+        dsf_offset += 2 * array_index
+
     elif array_type == 1:
         # Long Array
-        dsf_offset += (4 * array_index)
+        dsf_offset += 4 * array_index
     elif array_type == 2:
         # Float Array
-        dsf_offset += (8 * array_index)
+        dsf_offset += 8 * array_index
     elif array_type == 3:
         # String Array
-         
+
         string_length = -1
         for declared_string in ref_proc.procedure["string_declarations"]:
-            if declared_string['data_stack_frame_offset'] == dsf_offset - ref_proc.data_stack_frame_offset - 1:
-                string_length = declared_string['length']
+            if (
+                declared_string["data_stack_frame_offset"]
+                == dsf_offset - ref_proc.data_stack_frame_offset - 1
+            ):
+                string_length = declared_string["length"]
                 break
-            
-        if string_length == -1:
-            raise('Unable to determine string length')
 
-        dsf_offset += ((string_length + 1) * array_index) # QStrs have length byte too
+        if string_length == -1:
+            raise ("Unable to determine string length")
+
+        dsf_offset += (string_length + 1) * array_index  # QStrs have length byte too
 
     ee_val = data_stack.read(array_type, dsf_offset)
 
-    _logger.debug(f" - Storing Value {ee_val} DSF Addr {dsf_offset} of EE ref {ee_ref} ({array_index})")
+    _logger.debug(
+        f" - Storing Value {ee_val} DSF Addr {dsf_offset} of EE ref {ee_ref} ({array_index})"
+    )
 
     stack.push(array_type, ee_val)

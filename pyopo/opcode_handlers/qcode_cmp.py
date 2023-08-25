@@ -1,22 +1,23 @@
 import struct
 import math
 import statistics
-import logging       
+import logging
 import logging.config
 
 from pyopo.heap import data_stack
 from pyopo.var_stack import stack
 
 logging.config.fileConfig(fname="logger.conf")
-_logger = logging.getLogger()                            
-#_logger.setLevel(logging.DEBUG)
+_logger = logging.getLogger()
+# _logger.setLevel(logging.DEBUG)
 
 # Types
-T_INT_16  = 0
-T_INT_32  = 1
-T_FLOAT   = 2
-T_STRING  = 3
-T_ADDR    = 4
+T_INT_16 = 0
+T_INT_32 = 1
+T_FLOAT = 2
+T_STRING = 3
+T_ADDR = 4
+
 
 def qcode_cmp_less_than(procedure, data_stack: data_stack, stack: stack):
     # print(f"{hex(op_code)} - push% pop+2 < pop+1")
@@ -32,7 +33,9 @@ def qcode_cmp_less_than(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_cmp_equals(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"{hex(procedure.get_executed_opcode())} - push% pop+2 == pop+1  (compare, not assign)")
+    _logger.debug(
+        f"{hex(procedure.get_executed_opcode())} - push% pop+2 == pop+1  (compare, not assign)"
+    )
 
     res = -1 if stack.pop() == stack.pop() else 0
     stack.push(T_INT_16, res)
@@ -221,7 +224,7 @@ def get_na_array_list(na: int, data_stack: data_stack, stack: stack):
         element_count = stack.pop()
         addr = stack.pop()
         for i in range(element_count):
-            num_list.append(data_stack.read(T_FLOAT, addr + (element_count-1) * 8))
+            num_list.append(data_stack.read(T_FLOAT, addr + (element_count - 1) * 8))
     else:
         # Equivalent to popping the number of items
         for i in range(na):

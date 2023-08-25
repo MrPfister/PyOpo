@@ -4,18 +4,18 @@ import random
 import json
 import os
 from pyopo.filehandler_filesystem import *
-import logging       
-import logging.config   
+import logging
+import logging.config
 
 
 from pyopo.heap import data_stack
 from pyopo.var_stack import stack
 
 logging.config.fileConfig(fname="logger.conf")
-_logger = logging.getLogger()                            
-#_logger.setLevel(logging.DEBUG)
+_logger = logging.getLogger()
+# _logger.setLevel(logging.DEBUG)
 
-SPECIAL_IO_HANDLES = ['TIM:']
+SPECIAL_IO_HANDLES = ["TIM:"]
 
 
 def qcode_dir(procedure, data_stack: data_stack, stack: stack):
@@ -23,16 +23,17 @@ def qcode_dir(procedure, data_stack: data_stack, stack: stack):
 
     d = stack.pop()
 
-    if d != '':
+    if d != "":
         # Generate new Directory listing
         translated_d = translate_path_from_sibo(d, procedure.executable)
         files_in_dir = os.listdir(translated_d)
 
         procedure.dir_responses = list(
-            map(lambda f: translate_path_to_sibo(f, procedure.executable), files_in_dir))
+            map(lambda f: translate_path_to_sibo(f, procedure.executable), files_in_dir)
+        )
 
     if len(procedure.dir_responses) == 0:
-        dir_response = ''
+        dir_response = ""
     else:
         dir_response = procedure.dir_responses.pop()
 
@@ -99,7 +100,7 @@ def qcode_delete_file(procedure, data_stack: data_stack, stack: stack):
     print(f" - DELETE {d} Translated: {translated_d}")
     print("stub")
     input()
-    
+
     procedure.set_trap(False)
 
 
@@ -119,15 +120,15 @@ def qcode_ioa(procedure, data_stack: data_stack, stack: stack):
     ret = 0
 
     for io_obj in procedure.executable.io_handles:
-        if handle == io_obj['io_handle']:
-
-            if io_obj['sibo_filename'] == 'TIM:':
-                print('IO operation on TimeServer')
+        if handle == io_obj["io_handle"]:
+            if io_obj["sibo_filename"] == "TIM:":
+                print("IO operation on TimeServer")
 
                 if func == 1:
                     # Timer request
                     procedure.executable.io_hals["TIM:"].add_timer(
-                        status_addr, arg1_addr)
+                        status_addr, arg1_addr
+                    )
 
                     # Signal is set to -46 to start with
                     ret = -46
@@ -151,14 +152,14 @@ def qcode_iowaitstat(procedure, data_stack: data_stack, stack: stack):
     found_entry = False
     for hal_io_obj in procedure.executable.io_hals:
         if procedure.executable.io_hals[hal_io_obj].has_handle(status_addr):
-            print('IO operation on TimeServer')
+            print("IO operation on TimeServer")
 
             procedure.executable.io_hals["TIM:"].iowaitstat(status_addr)
             found_entry = True
             break
 
     if not found_entry:
-        print('Could not find corresponding status var in io')
+        print("Could not find corresponding status var in io")
         input()
 
 
@@ -187,14 +188,14 @@ def qcode_ioopen(procedure, data_stack: data_stack, stack: stack):
 
     # Create default struct for io object
     io_obj = {
-        'random_access': False,
-        'sharable': False,
-        'read_only': True,
-        'var_length_records': False,
-        'open_mode': 0,
-        'io_handle_addr': addr,
-        'io_handle': io_handle,
-        'sibo_filename': filename
+        "random_access": False,
+        "sharable": False,
+        "read_only": True,
+        "var_length_records": False,
+        "open_mode": 0,
+        "io_handle_addr": addr,
+        "io_handle": io_handle,
+        "sibo_filename": filename,
     }
 
     # Unpack mode
@@ -202,81 +203,80 @@ def qcode_ioopen(procedure, data_stack: data_stack, stack: stack):
     # Mode Category 3: Access Flags
     if mode >= 0x0400:
         # Open for sharing - This is ignored for this runtime as only one executuble can run concurrently
-        io_obj['sharable'] = True
+        io_obj["sharable"] = True
         mode -= 0x0400
 
     if mode >= 0x0200:
-        io_obj['random_access'] = True
+        io_obj["random_access"] = True
         mode -= 0x0200
 
     if mode >= 0x0100:
-        io_obj['read_only'] = True
+        io_obj["read_only"] = True
         mode -= 0x0100
 
     # Mode Category 2: File Format
     if mode >= 0x0020:
-        io_obj['var_length_records'] = True
+        io_obj["var_length_records"] = True
         mode -= 0x0020
 
     # Mode Category 1: Open Mode
     if mode >= 0x0004:
-        raise ('Invalid IOOPEN Mode')
+        raise ("Invalid IOOPEN Mode")
     else:
-        io_obj['open_mode'] = mode
+        io_obj["open_mode"] = mode
 
     translated_name = translate_path_from_sibo(filename, procedure.executable)
 
-    io_obj['io_filename'] = translated_name
+    io_obj["io_filename"] = translated_name
 
     print(io_obj)
 
-    print(
-        f" - IOOPEN handle={addr}, Translated File={translated_name}, {mode}")
+    print(f" - IOOPEN handle={addr}, Translated File={translated_name}, {mode}")
 
     ret = 0  # Default result state
 
     # Perform additional validation checks dependent on the open mode
     open_mode = "r+"
-    if io_obj['sibo_filename'] not in SPECIAL_IO_HANDLES:
+    if io_obj["sibo_filename"] not in SPECIAL_IO_HANDLES:
         # Special IO Handles e.g. TIM: do not check existence
-        if io_obj['open_mode'] == 0:
+        if io_obj["open_mode"] == 0:
             # Open an existing file
             if not os.path.exists(translated_name):
                 # The file does not exist
                 ret = -1
-        elif io_obj['open_mode'] == 1:
+        elif io_obj["open_mode"] == 1:
             # Create a file that does not exist
             if os.path.exists(translated_name):
                 # The file already exists
                 ret = -1
 
             open_mode = "w+"
-        elif io_obj['open_mode'] == 2:
+        elif io_obj["open_mode"] == 2:
             # Create a new file or replace an existing file
             open_mode = "w+"
 
-        elif io_obj['open_mode'] == 3:
+        elif io_obj["open_mode"] == 3:
             # Append to an existing file
             open_mode = "a+"
 
-    open_mode = 'b' + open_mode  # Requires byte access to the file
+    open_mode = "b" + open_mode  # Requires byte access to the file
 
     if ret != -1:
         print(filename)
         print(json.dumps(io_obj, indent=4))
 
         # Handle to the underlying obj, not what is returnend
-        if io_obj['sibo_filename'] not in SPECIAL_IO_HANDLES:
+        if io_obj["sibo_filename"] not in SPECIAL_IO_HANDLES:
             # Standard file
-            io_obj['handle'] = open(translated_name, open_mode)
-        elif io_obj['sibo_filename'] == 'TIM:':
+            io_obj["handle"] = open(translated_name, open_mode)
+        elif io_obj["sibo_filename"] == "TIM:":
             # User is trying to access time
-            io_obj['handle'] = 0
+            io_obj["handle"] = 0
 
         procedure.executable.io_handles.append(io_obj)
 
         # Write out the io handle to the handle addr specified
-        data_stack.write(0, io_obj['io_handle'], addr)
+        data_stack.write(0, io_obj["io_handle"], addr)
 
     stack.push(0, ret)
 
@@ -292,25 +292,23 @@ def qcode_ioread(procedure, data_stack: data_stack, stack: stack):
 
     ret = -1  # Error occured, invalid handle
     for io_obj in procedure.executable.io_handles:
-        if handle == io_obj['io_handle']:
-
-            read_chars = io_obj['handle'].read(maxlen)
+        if handle == io_obj["io_handle"]:
+            read_chars = io_obj["handle"].read(maxlen)
 
             # Replace null characters
             # read_chars = read_chars.decode().replace('\0', '')
 
-            print(
-                f" - IOREAD {len(read_chars)} characters read: '{read_chars}'")
+            print(f" - IOREAD {len(read_chars)} characters read: '{read_chars}'")
             # input()
             ret = len(read_chars)
 
-            data_stack.memory[addr:addr+len(read_chars)] = read_chars
+            data_stack.memory[addr : addr + len(read_chars)] = read_chars
             break
 
     stack.push(0, ret)
 
     if ret == -1:
-        print('Invalid Handle')
+        print("Invalid Handle")
         input()
 
 
@@ -325,10 +323,10 @@ def qcode_iowrite(procedure, data_stack: data_stack, stack: stack):
 
     ret = -1  # Error occured, invalid handle
     for io_obj in procedure.executable.io_handles:
-        if handle == io_obj['io_handle']:
-            bytes_to_write = data_stack.memory[addr:addr+write_len]
+        if handle == io_obj["io_handle"]:
+            bytes_to_write = data_stack.memory[addr : addr + write_len]
 
-            io_obj['handle'].write(bytes_to_write)
+            io_obj["handle"].write(bytes_to_write)
 
             print(f" - IOWRITE {write_len} characters written")
             print(bytes_to_write.decode())
@@ -347,9 +345,8 @@ def qcode_ioclose(procedure, data_stack: data_stack, stack: stack):
 
     ret = -1  # Error occured, invalid handle
     for i in range(len(procedure.executable.io_handles)):
-        if handle == procedure.executable.io_handles[i]['io_handle']:
-
-            procedure.executable.io_handles[i]['handle'].close()
+        if handle == procedure.executable.io_handles[i]["io_handle"]:
+            procedure.executable.io_handles[i]["handle"].close()
 
             # Free up the entry
             del procedure.executable.io_handles[i]
@@ -376,8 +373,7 @@ def qcode_ioseek(procedure, data_stack: data_stack, stack: stack):
 
     ret = -1  # Error occured, invalid handle
     for i in range(len(procedure.executable.io_handles)):
-        if handle == procedure.executable.io_handles[i]['io_handle']:
-
+        if handle == procedure.executable.io_handles[i]["io_handle"]:
             # Convert Psion ioseek mode to Python FP seek mode
             if mode == 1:
                 # Absolute position
@@ -393,10 +389,9 @@ def qcode_ioseek(procedure, data_stack: data_stack, stack: stack):
                 from_what = 0
                 offset = 0
 
-            procedure.executable.io_handles[i]['handle'].seek(
-                offset, from_what)
+            procedure.executable.io_handles[i]["handle"].seek(offset, from_what)
 
-            new_position = procedure.executable.io_handles[i]['handle'].tell()
+            new_position = procedure.executable.io_handles[i]["handle"].tell()
 
             data_stack.write(0, new_position, offset_addr)
 
@@ -404,7 +399,7 @@ def qcode_ioseek(procedure, data_stack: data_stack, stack: stack):
             break
 
     if ret != 0:
-        print('IOSEEK error')
+        print("IOSEEK error")
         input()
 
     stack.push(0, ret)

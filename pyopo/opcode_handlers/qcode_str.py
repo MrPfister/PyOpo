@@ -6,12 +6,13 @@ from pyopo.var_stack import stack
 
 from pyopo.opl_exceptions import *
 
-import logging       
-import logging.config   
+import logging
+import logging.config
 
 logging.config.fileConfig(fname="logger.conf")
-_logger = logging.getLogger()                            
-#_logger.setLevel(logging.DEBUG)
+_logger = logging.getLogger()
+# _logger.setLevel(logging.DEBUG)
+
 
 def qcode_val(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0x92 - VAL(pop$)")
@@ -34,7 +35,7 @@ def qcode_asc(procedure, data_stack: data_stack, stack: stack):
 
     if res > 255:
         # Outside ASCII range
-        #_logger.warning('Warning: ASC outside ASCII range - defaulting to 0')
+        # _logger.warning('Warning: ASC outside ASCII range - defaulting to 0')
         res = 0
 
     stack.push(0, res)
@@ -52,14 +53,14 @@ def qcode_loc(procedure, data_stack: data_stack, stack: stack):
     pop_1 = stack.pop().upper()
     pop_2 = stack.pop().upper()
 
-    # Find returns -1 if not found, or 0 based otherwise. 
+    # Find returns -1 if not found, or 0 based otherwise.
     # The OPL command is 0 if not found and 1 based
     res = pop_2.find(pop_1) + 1
 
-    #print(f" - LOC({pop_2}, {pop_1}) = {res}")
+    # print(f" - LOC({pop_2}, {pop_1}) = {res}")
 
     stack.push(0, res)
-    
+
 
 def qcode_left(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0xCA - push$ LEFT$(pop$2, pop%1)")
@@ -78,9 +79,9 @@ def qcode_left(procedure, data_stack: data_stack, stack: stack):
     a = stack.pop()
 
     if x < 0:
-        raise(KErrInvalidArgs)
+        raise (KErrInvalidArgs)
     elif x <= len(a):
-        left = a[0: x]
+        left = a[0:x]
     else:
         left = a
 
@@ -95,7 +96,7 @@ def qcode_rept(procedure, data_stack: data_stack, stack: stack):
 
     rept = pop_2 * pop_1
 
-    #print(f" - REPT$({pop_2}, {pop_1}) = {rept}")
+    # print(f" - REPT$({pop_2}, {pop_1}) = {rept}")
 
     stack.push(3, rept)
 
@@ -108,12 +109,12 @@ def qcode_gen(procedure, data_stack: data_stack, stack: stack):
     if int(x) == x:
         x = int(x)
 
-    #print(f" - GEN$({x}, {y})")
+    # print(f" - GEN$({x}, {y})")
 
     int_len = len(str(int(x)))
     res = str(x)
     if len(res) != int_len:
-        min_len = int_len + 2 # Needs space for decimal
+        min_len = int_len + 2  # Needs space for decimal
     else:
         # Just requires space for int
         min_len = int_len
@@ -130,8 +131,8 @@ def qcode_gen(procedure, data_stack: data_stack, stack: stack):
         # Clip the length
         res = res[:y]
 
-    #print(f" - = '{res}'")
-    
+    # print(f" - = '{res}'")
+
     stack.push(3, res)
 
 
@@ -153,7 +154,7 @@ def qcode_num(procedure, data_stack: data_stack, stack: stack):
         res = " " * y + res
     elif len(res) > y:
         res = "*" * y
-    
+
     # print(f" - NUM$({x}, {y}) = {res}")
 
     stack.push(3, res)
@@ -174,17 +175,17 @@ def qcode_fix(procedure, data_stack: data_stack, stack: stack):
         if len(res) >= z:
             res = res[0:z]
         else:
-            res = ' ' * (z - len(res)) + res
-    elif z>len(res):
+            res = " " * (z - len(res)) + res
+    elif z > len(res):
         res = res
     else:
         res = res[0:z]
-    
+
     # print(f" - FIX$({x}, {y}, {z}) = {res}")
 
     stack.push(3, res)
 
-    
+
 def qcode_mid(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0xCC - push$ MID$ pop$3 pop%2 pop%1)")
 
@@ -192,17 +193,17 @@ def qcode_mid(procedure, data_stack: data_stack, stack: stack):
     x = stack.pop()
     a = stack.pop()
 
-    if x-1 < 0:
-        raise(KErrOutOfRange)
+    if x - 1 < 0:
+        raise (KErrOutOfRange)
 
-    res = a[x-1:x-1+y] # Psion strings are +1 offset
+    res = a[x - 1 : x - 1 + y]  # Psion strings are +1 offset
 
     stack.push(3, res)
 
 
 def qcode_right(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0xD1 - push$ RIGHT$(pop*2, pop%1)")
-    
+
     """
     Emulator Testing Notes:
 
@@ -217,7 +218,7 @@ def qcode_right(procedure, data_stack: data_stack, stack: stack):
     a = stack.pop()
 
     if x < 0:
-        raise(KErrInvalidArgs)
+        raise (KErrInvalidArgs)
     elif x <= len(a):
         right = a[-x:]
     else:
@@ -257,9 +258,9 @@ def qcode_sci(procedure, data_stack: data_stack, stack: stack):
         z = abs(z)
         diff = z - len(res)
 
-        res = ' ' * diff + res
+        res = " " * diff + res
     elif len(res) > z:
-        res = '*' * z
+        res = "*" * z
 
     # print(f" - SCI$({x}, {y}, {z}) = {res}")
 

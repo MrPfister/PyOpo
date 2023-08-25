@@ -5,18 +5,18 @@ import pygame
 import datetime
 
 from pyopo.filehandler_filesystem import *
-import logging       
-import logging.config   
+import logging
+import logging.config
 
 
 from pyopo.heap import data_stack
 from pyopo.var_stack import stack
 
 logging.config.fileConfig(fname="logger.conf")
-_logger = logging.getLogger()                            
-#_logger.setLevel(logging.DEBUG)
+_logger = logging.getLogger()
+# _logger.setLevel(logging.DEBUG)
 
-TICKS_PER_SECOND = 32 # S3 is 32, Emulator is 18.2
+TICKS_PER_SECOND = 32  # S3 is 32, Emulator is 18.2
 
 # Battery emulated values
 BATTERY_MAH = 2800
@@ -38,21 +38,18 @@ BATTERY_MAH = 2800
                                                       M  6:3  Z 12:3
 """
 HwGetScanCodes = {
-    pygame.K_RETURN:     (1, 0x01), # Enter
-    pygame.K_RIGHT:    (1, 0x02), # Right
-    pygame.K_TAB:      (1, 0x04), # Tab
+    pygame.K_RETURN: (1, 0x01),  # Enter
+    pygame.K_RIGHT: (1, 0x02),  # Right
+    pygame.K_TAB: (1, 0x04),  # Tab
     # Y
-    pygame.K_LEFT:    (1, 0x10), # Left
-    pygame.K_DOWN:    (1, 0x20), # Down
-
-    pygame.K_ESCAPE:     (8, 0x0100), # Esc
-
-    pygame.K_DELETE:      (3, 0x01), # Delete
-    
-    pygame.K_SPACE:     (5, 0x01), # Space
-    
-    pygame.K_UP:    (8, 0x20), # Up
+    pygame.K_LEFT: (1, 0x10),  # Left
+    pygame.K_DOWN: (1, 0x20),  # Down
+    pygame.K_ESCAPE: (8, 0x0100),  # Esc
+    pygame.K_DELETE: (3, 0x01),  # Delete
+    pygame.K_SPACE: (5, 0x01),  # Space
+    pygame.K_UP: (8, 0x20),  # Up
 }
+
 
 def qcode_OS(procedure, data_stack: data_stack, stack: stack):
     _logger.debug(f"0x57 0x35 - OS")
@@ -63,17 +60,21 @@ def qcode_OS(procedure, data_stack: data_stack, stack: stack):
         addr_2 = stack.pop()
     else:
         addr_2 = None
-    
+
     addr_1 = stack.pop()
     i = stack.pop()
 
     _logger.debug(f" - OS {hex(i)}, {addr_1}, {addr_2}")
 
     if i == 0x87:
-        _logger.debug(f' - OS Call 0x87 - carried out automatically for OPL programs - Not Implemented')
+        _logger.debug(
+            f" - OS Call 0x87 - carried out automatically for OPL programs - Not Implemented"
+        )
         pass
     elif i == 0x88:
-        _logger.debug(f' - OS Call 0x88 - ProcSetPriority ProcID={addr_1} - Not Implemented')
+        _logger.debug(
+            f" - OS Call 0x88 - ProcSetPriority ProcID={addr_1} - Not Implemented"
+        )
         pass
     elif i == 0x8B:
         # General Services
@@ -92,7 +93,7 @@ def qcode_OS(procedure, data_stack: data_stack, stack: stack):
         _logger.debug(" - Hardware Control 0x8E  - Not Implemented")
         pass
     else:
-        #_logger.warning(f'OS Call Not implemented - STUB')
+        # _logger.warning(f'OS Call Not implemented - STUB')
         input()
 
     # Return the register flags
@@ -107,7 +108,6 @@ def qcode_call(procedure, data_stack: data_stack, stack: stack):
 
     # CALL(s%,bx%,cx%,dx%,si%,di%)
 
-
     args = []
     for i in range(arg_count):
         args.append(stack.pop())
@@ -119,7 +119,7 @@ def qcode_call(procedure, data_stack: data_stack, stack: stack):
         # Fn $89 Sub $01
         # TimSleepForTicks fails
         _logger.debug("CALL 0x0189: - TimSleepForTicks fails")
-        
+
         time.sleep(1.0 / TICKS_PER_SECOND * args[0])
         stack.push(0, 0)
     elif args[-1] == 0x0C88:
@@ -172,33 +172,33 @@ def qcode_call(procedure, data_stack: data_stack, stack: stack):
             Bit 7: always zero
         Offset 30 (byte): units (0 = inches, 1 = centimetres)
         """
-        
+
         dsf_addr = args[-2]
 
         countrydata = bytearray(40)
 
-        struct.pack_into("<H", countrydata, 0, 44) # UK Dial code
+        struct.pack_into("<H", countrydata, 0, 44)  # UK Dial code
 
-        countrydata[4] = 1 # DMY
-        countrydata[5] = 1 # 24hr Clock
-        countrydata[6] = 0 # Currency symbol (£) before
-        countrydata[7] = 0 # No Currency symbol space
-        countrydata[8] = 2 # Currency decimal places
-        countrydata[9] = 0 # Currency negative format -
-        countrydata[10] = 3 # Triad threshold
-        countrydata[11] = ord(",") # Tirad char
-        countrydata[12] = ord(".") # Decimal char
-        countrydata[13] = ord("-") # Date Seperator
-        countrydata[14] = ord(":") # Time Seperator
-        countrydata[15] = ord("£") # Currency symbol
-        countrydata[24] = 0 # Mon start of weeek
-        countrydata[26] = 1 # Digital clock
-        countrydata[27] = 3 # 3 chr day abbr
-        countrydata[28] = 3 # 3 chr month abbr
-        countrydata[29] = 31 # Mon-Fri workdays
-        countrydata[30] = 1 # CM units
+        countrydata[4] = 1  # DMY
+        countrydata[5] = 1  # 24hr Clock
+        countrydata[6] = 0  # Currency symbol (£) before
+        countrydata[7] = 0  # No Currency symbol space
+        countrydata[8] = 2  # Currency decimal places
+        countrydata[9] = 0  # Currency negative format -
+        countrydata[10] = 3  # Triad threshold
+        countrydata[11] = ord(",")  # Tirad char
+        countrydata[12] = ord(".")  # Decimal char
+        countrydata[13] = ord("-")  # Date Seperator
+        countrydata[14] = ord(":")  # Time Seperator
+        countrydata[15] = ord("£")  # Currency symbol
+        countrydata[24] = 0  # Mon start of weeek
+        countrydata[26] = 1  # Digital clock
+        countrydata[27] = 3  # 3 chr day abbr
+        countrydata[28] = 3  # 3 chr month abbr
+        countrydata[29] = 31  # Mon-Fri workdays
+        countrydata[30] = 1  # CM units
 
-        data_stack.memory[dsf_addr:dsf_addr+len(countrydata)] = countrydata
+        data_stack.memory[dsf_addr : dsf_addr + len(countrydata)] = countrydata
         stack.push(0, 0)
 
     elif args[-1] == 0x118E:
@@ -231,12 +231,12 @@ def qcode_call(procedure, data_stack: data_stack, stack: stack):
 
         stack.push(0, 0)
 
-    elif args[-1] == 0x1b8B:
+    elif args[-1] == 0x1B8B:
         # Fn $8B Sub $1B
         # GenGetLanguageCode
         _logger.debug("CALL 0x1b8B: - GenGetLanguageCode")
-        
-        stack.push(0, 1) # English - UK
+
+        stack.push(0, 1)  # English - UK
 
     elif args[-1] == 0x1C8E:
         # Fn $8E Sub $1C
@@ -276,7 +276,7 @@ def qcode_call(procedure, data_stack: data_stack, stack: stack):
         # HwSupplyInfo v3
 
         """
-        
+
         HwSupplyInfo v3
             BX: 22 byte buffer
         Fills the buffer with additional information about the power supply:
@@ -299,24 +299,28 @@ def qcode_call(procedure, data_stack: data_stack, stack: stack):
         Offset 18 (long): mA-ticks (i.e. mAhours * 60 * 60 * 32)
 
         18 expects ticks in internal format
-        
+
         """
 
         dsf_addr = args[-2]
 
-        
         supplystatus = bytearray(22)
 
-        supplystatus[0] = 3 # Good voltage
-        supplystatus[1] = 3 # Always been good
-        supplystatus[2] = 1 # Backup battery good
-        supplystatus[3] = 0 # External power not present
-        supplystatus[4] = 0 # Warning Flags
-        supplystatus[5] = 0 # Warning Flags
+        supplystatus[0] = 3  # Good voltage
+        supplystatus[1] = 3  # Always been good
+        supplystatus[2] = 1  # Backup battery good
+        supplystatus[3] = 0  # External power not present
+        supplystatus[4] = 0  # Warning Flags
+        supplystatus[5] = 0  # Warning Flags
 
         # Time when batteries were inserted (a day ago)
-        struct.pack_into("<L", supplystatus, 6, int((datetime.datetime.now()-datetime.timedelta(days=1)).timestamp()))
-        
+        struct.pack_into(
+            "<L",
+            supplystatus,
+            6,
+            int((datetime.datetime.now() - datetime.timedelta(days=1)).timestamp()),
+        )
+
         # Ticks running on battery  - 1hr
         struct.pack_into("<L", supplystatus, 10, int(3600 * TICKS_PER_SECOND))
 
@@ -324,32 +328,34 @@ def qcode_call(procedure, data_stack: data_stack, stack: stack):
         struct.pack_into("<L", supplystatus, 14, int(3600 * TICKS_PER_SECOND))
 
         # mA ticks
-        struct.pack_into("<L", supplystatus, 18, int(BATTERY_MAH * 60 * 60 * TICKS_PER_SECOND))
+        struct.pack_into(
+            "<L", supplystatus, 18, int(BATTERY_MAH * 60 * 60 * TICKS_PER_SECOND)
+        )
 
         # Write to DSF
-        data_stack.memory[dsf_addr:dsf_addr+len(supplystatus)] = supplystatus
+        data_stack.memory[dsf_addr : dsf_addr + len(supplystatus)] = supplystatus
 
         stack.push(0, 0)
 
     elif args[-1] == 0x6C8D:
         _logger.info("CALL 0x6c8d: - Send Machine Switch On Event - Not Implemented")
         stack.push(0, 0)
-        
+
     elif args[-1] == 0x0F8B:
         # Fn $8B Sub $0F
         # GenGetSoundFlags
         _logger.info("CALL 0x108B: - GenGetSoundFlags")
-        
+
         # Bit 15: set=disable all sound
         stack.push(0, 0)
     elif args[-1] == 0x108B:
         _logger.debug("CALL 0x108B: - GenSetSoundFlags")
-        
+
         _logger.debug(f"GenSetSoundFlags -> {args[-2]}")
         stack.push(0, 0)
     elif args[-1] == 0x138E:
         _logger.debug("CALL 0x138E: - HwReadLcdContrast")
-        stack.push(0, 8) # 50%
+        stack.push(0, 8)  # 50%
     elif args[-1] == 0x198D and args[-2] == 100:
         _logger.debug("CALL 0x198d, 100: - Send App to foreground - Not Implemented")
         stack.push(0, 0)
@@ -379,13 +385,13 @@ def qcode_call(procedure, data_stack: data_stack, stack: stack):
         stack.push(0, 0)
     elif args[-1] == 0x5F8D:
         # gSetOpenAddress
-        bx=args[-2] # 0=cancel, 1=direct, 2=indirect long, 3=indirect word
-        cx=args[-3] # file offset low  word ??? it's declared as ULONG 
-        dx=args[-4] # file offset high word ??? it's declared as ULONG
-        
+        bx = args[-2]  # 0=cancel, 1=direct, 2=indirect long, 3=indirect word
+        cx = args[-3]  # file offset low  word ??? it's declared as ULONG
+        dx = args[-4]  # file offset high word ??? it's declared as ULONG
+
         _logger.debug(f"CALL 0x5F8D: - gSetOpenAddress({bx}, {cx}, {dx})")
         procedure.executable.window_manager.gSetOpenAddress(bx, cx, dx)
-         
+
         stack.push(0, 0)
     elif args[-1] == 0x288E:
         # Fn $8E Sub $28: HwGetScanCodes
@@ -394,16 +400,18 @@ def qcode_call(procedure, data_stack: data_stack, stack: stack):
 
         buffer = [0] * 10
         # Instead of looking at the last key press (key down event), see which keys are currently down state
-        keys=pygame.key.get_pressed()
+        keys = pygame.key.get_pressed()
         for key_down in HwGetScanCodes:
             if keys[key_down]:
                 # Key is currently pressed
                 last_key_scan_loc = HwGetScanCodes.get(key_down, None)
                 if last_key_scan_loc:
-                    buffer[last_key_scan_loc[0]-1] = buffer[last_key_scan_loc[0]-1] or last_key_scan_loc[1]
+                    buffer[last_key_scan_loc[0] - 1] = (
+                        buffer[last_key_scan_loc[0] - 1] or last_key_scan_loc[1]
+                    )
 
         # Store in memory
-        data_stack.memory[addr:addr+len(buffer)] = buffer
+        data_stack.memory[addr : addr + len(buffer)] = buffer
         stack.push(0, addr)
     else:
         # Fall back to attempting to calculate Call ID
@@ -442,6 +450,6 @@ def qcode_call(procedure, data_stack: data_stack, stack: stack):
             input()
             stack.push(0, 0)
         else:
-            print(' - Unknown System CALL ')
+            print(" - Unknown System CALL ")
             input()
             stack.push(0, 0)

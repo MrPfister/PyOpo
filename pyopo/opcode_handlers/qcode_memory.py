@@ -1,18 +1,18 @@
-import logging       
-import logging.config   
+import logging
+import logging.config
 
 from pyopo.heap import data_stack
 from pyopo.var_stack import stack
 
 logging.config.fileConfig(fname="logger.conf")
-_logger = logging.getLogger()                            
-#_logger.setLevel(logging.DEBUG) 
+_logger = logging.getLogger()
+# _logger.setLevel(logging.DEBUG)
 
 
 def qcode_pokeb(procedure, data_stack: data_stack, stack: stack):
     val = stack.pop()
     addr = stack.pop()
-    
+
     _logger.debug(f"0x9C - POKEB {addr}, {val}")
 
     # Push a byte directly into memory
@@ -20,12 +20,11 @@ def qcode_pokeb(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_poke(procedure, data_stack: data_stack, stack: stack):
-    
     op_code = procedure.get_executed_opcode()
     opcode_type = op_code - 0x98
     val = stack.pop()
     addr = stack.pop()
-    
+
     _logger.debug(f"{hex(op_code)} - POKE {addr}, {val}")
 
     # Push a byte directly into memory
@@ -46,7 +45,7 @@ def qcode_peekw(procedure, data_stack: data_stack, stack: stack):
 
     _logger.debug(f"0x57 0x19 - PEEKW({addr}) -> {val}")
     stack.push(0, val)
-    
+
 
 def qcode_peekf(procedure, data_stack: data_stack, stack: stack):
     addr = stack.pop()

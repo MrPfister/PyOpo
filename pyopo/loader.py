@@ -1,16 +1,16 @@
 import os
 import json
-import struct                                                       
+import struct
 import sys
 
 from typing import Any, List
 
-import logging       
-import logging.config   
+import logging
+import logging.config
 
 logging.config.fileConfig(fname="logger.conf")
-_logger = logging.getLogger()                            
-#_logger.setLevel(logging.DEBUG)
+_logger = logging.getLogger()
+# _logger.setLevel(logging.DEBUG)
 
 # Improve _logger performance
 logging._srcfile = None
@@ -20,32 +20,26 @@ logging.logMultiprocessing = False
 
 
 class opo_header:
-    """Combined First and Second header component of a OPO/OPA file
-    """
-    filetype:str = ""
-    opo_version:int = 0
-    second_header_offset:int = 0
-    source_filename:str = ""
-    file_length:int = 0
-    translator_version:int = 0
-    required_runtime_version:int = 0
-    procedure_table_offset:int = 0
+    """Combined First and Second header component of a OPO/OPA file"""
+
+    filetype: str = ""
+    opo_version: int = 0
+    second_header_offset: int = 0
+    source_filename: str = ""
+    file_length: int = 0
+    translator_version: int = 0
+    required_runtime_version: int = 0
+    procedure_table_offset: int = 0
 
 
 class embedded_file:
-    """Metadata for embedded files stored within the executable itself
-    """
+    """Metadata for embedded files stored within the executable itself"""
+
     start_offset: int = 0
     end_offset: int = 0
     type: str = "???"
 
-    def __init__(
-        self, 
-        start_offset: int = 0, 
-        end_offset: int = 0, 
-        type: str = "???"
-    ):
-        
+    def __init__(self, start_offset: int = 0, end_offset: int = 0, type: str = "???"):
         self.start_offset = start_offset
         self.end_offset = end_offset
         self.type = type
@@ -53,15 +47,12 @@ class embedded_file:
 
 class loader:
     first_proc = True
-    
+
     def _readembeddedfiles(
-        binary: bytes,
-        embedded_files_offset: int,
-        second_header_offset: int
+        binary: bytes, embedded_files_offset: int, second_header_offset: int
     ) -> List[embedded_file]:
-        """Read the list of embedded files that are stored between the first and second header in the OPO/OPA file
-        """
-         
+        """Read the list of embedded files that are stored between the first and second header in the OPO/OPA file"""
+
         file_offset = embedded_files_offset
 
         embedded_files = []
@@ -70,24 +61,30 @@ class loader:
             file_len = struct.unpack_from("<H", binary, file_offset)[0]
             file_offset += 2
 
-            if binary[file_offset:file_offset + 3].decode("utf-8", "replace") == "PIC":
-                embedded_files.append(embedded_file(file_offset, file_offset + file_len, "PIC"))
+            if (
+                binary[file_offset : file_offset + 3].decode("utf-8", "replace")
+                == "PIC"
+            ):
+                embedded_files.append(
+                    embedded_file(file_offset, file_offset + file_len, "PIC")
+                )
             elif file_len == 36:
                 # OPA Header Info
-                embedded_files.append(embedded_file(file_offset, file_offset + file_len, "OPA"))
+                embedded_files.append(
+                    embedded_file(file_offset, file_offset + file_len, "OPA")
+                )
             else:
-                embedded_files.append(embedded_file(file_offset, file_offset + file_len))
+                embedded_files.append(
+                    embedded_file(file_offset, file_offset + file_len)
+                )
 
             file_offset += file_len
-             
+
         _logger.info(f"{len(embedded_files)} Embedded file(s) found")
 
         return embedded_files
 
-
-    def _readheader(
-        binary: bytes
-    ) -> opo_header:
+    def _readheader(binary: bytes) -> opo_header:
         """Reads the first and second header of an OPO file.
         The content between (embedded files) are ignored
         """
@@ -100,7 +97,9 @@ class loader:
             raise ImportError("Not a valid executable")
 
         # First Header
-        header.opo_version = struct.unpack_from("<H", binary, 16)[0] # OPO Version (1 - Currently ignored)
+        header.opo_version = struct.unpack_from("<H", binary, 16)[
+            0
+        ]  # OPO Version (1 - Currently ignored)
         header.second_header_offset = struct.unpack_from("<H", binary, 18)[0]
         header.source_filename = loader._read_qstr(20, binary)
 
@@ -113,13 +112,12 @@ class loader:
         header.procedure_table_offset = second_header[3]
 
         return header
-    
 
     def _read_procedure_table(
         procedure_table_offset: int,
         translator_version: int,
         binary: bytes,
-        src_filename: str
+        src_filename: str,
     ) -> List[Any]:
         procedures = []
 
@@ -137,35 +135,36 @@ class loader:
 
             procedure_entry = {
                 "name": procedure_name,
-                "src_file": src_filename, # Store the source filename to aid loadm
+                "src_file": src_filename,  # Store the source filename to aid loadm
                 "proc_offset": proc_info[0],
-                "line_no": proc_info[1]
+                "line_no": proc_info[1],
             }
 
-            proc_body = loader._read_procedure(procedure_entry["proc_offset"], translator_version, binary)
+            proc_body = loader._read_procedure(
+                procedure_entry["proc_offset"], translator_version, binary
+            )
 
             procedure_entry = {**procedure_entry, **proc_body}
 
             procedures.append(procedure_entry)
 
-        binary_offset += 2 # QStr + 0 byte to mark end of Procedure Table
+        binary_offset += 2  # QStr + 0 byte to mark end of Procedure Table
 
         return procedures
 
     def _read_procedure(
-        offset:int,
-        translator_version:int,
-        binary: bytes
+        offset: int, translator_version: int, binary: bytes
     ) -> List[Any]:
-
         procedure_info = {}
         binary_offset = offset
 
-        external_ref_counter = 18 # The first item is always 18
+        external_ref_counter = 18  # The first item is always 18
 
         # Optimisation Section (for select compiler versions)
         if translator_version >= 4383:
-            procedure_info["optimisation_section_size"] = struct.unpack_from("<H", binary, binary_offset)[0]
+            procedure_info["optimisation_section_size"] = struct.unpack_from(
+                "<H", binary, binary_offset
+            )[0]
             binary_offset += 2
 
         # Space Control Section
@@ -181,12 +180,14 @@ class loader:
         procedure_info["parameters"] = []
         for i in range(procedure_info["parameter_count"]):
             # Parameters are given in REVERSE ORDER
-            procedure_info["parameters"].append({'type': int(binary[binary_offset])})
+            procedure_info["parameters"].append({"type": int(binary[binary_offset])})
             binary_offset += 1
 
         # Global Declaration Section
         section_start_offset = binary_offset
-        procedure_info["global_declaration_section_size"] = struct.unpack_from("<H", binary, binary_offset)[0]
+        procedure_info["global_declaration_section_size"] = struct.unpack_from(
+            "<H", binary, binary_offset
+        )[0]
         binary_offset += 2
         procedure_info["global_declarations"] = []
         if procedure_info["global_declaration_section_size"] > 0:
@@ -199,22 +200,28 @@ class loader:
                 binary_offset += 3
                 global_var["type"] = global_meta[0]
 
-
-                global_var["data_stack_frame_offset"] = global_meta[1] # Turn this into a virtual address
+                global_var["data_stack_frame_offset"] = global_meta[
+                    1
+                ]  # Turn this into a virtual address
 
                 global_var["ee"] = external_ref_counter
                 external_ref_counter += len(global_var["name"]) + 4
 
                 procedure_info["global_declarations"].append(global_var)
 
-
-                if binary_offset > section_start_offset + procedure_info["global_declaration_section_size"]:
+                if (
+                    binary_offset
+                    > section_start_offset
+                    + procedure_info["global_declaration_section_size"]
+                ):
                     break
 
         # Called Procedure Section
         section_start_offset = binary_offset
-        procedure_info["called_procedure_section_size"] = struct.unpack_from("<H", binary, binary_offset)[0]
-        binary_offset +=2
+        procedure_info["called_procedure_section_size"] = struct.unpack_from(
+            "<H", binary, binary_offset
+        )[0]
+        binary_offset += 2
         procedure_info["called_procedures"] = []
         if procedure_info["called_procedure_section_size"] > 0:
             while True:
@@ -228,8 +235,12 @@ class loader:
                 external_ref_counter += len(called_procedure["name"]) + 2
 
                 procedure_info["called_procedures"].append(called_procedure)
-                
-                if binary_offset >section_start_offset + procedure_info["called_procedure_section_size"]:
+
+                if (
+                    binary_offset
+                    > section_start_offset
+                    + procedure_info["called_procedure_section_size"]
+                ):
                     break
 
         # Global References Section
@@ -244,13 +255,12 @@ class loader:
 
             type_code = int(binary[binary_offset])
             binary_offset += 1
-            procedure_info["global_references"].append({
-                "name": global_name,
-                "type": type_code
-            })
+            procedure_info["global_references"].append(
+                {"name": global_name, "type": type_code}
+            )
 
         if loader.first_proc:
-            _logger.info(json.dumps(procedure_info['global_references'], indent=4))
+            _logger.info(json.dumps(procedure_info["global_references"], indent=4))
 
         # String Control Section
         procedure_info["string_declarations"] = []
@@ -259,13 +269,12 @@ class loader:
             binary_offset += 2
             if dsf_offset == 0:
                 break
-            
+
             string_length = int(binary[binary_offset])
             binary_offset += 1
-            procedure_info["string_declarations"].append({
-                "data_stack_frame_offset": dsf_offset,
-                "length": string_length
-            }) 
+            procedure_info["string_declarations"].append(
+                {"data_stack_frame_offset": dsf_offset, "length": string_length}
+            )
 
         # Array Control Section
         procedure_info["array_declarations"] = []
@@ -274,52 +283,50 @@ class loader:
             binary_offset += 2
             if dsf_offset == 0:
                 break
-            
+
             array_length = struct.unpack_from("<H", binary, binary_offset)[0]
             binary_offset += 2
-            procedure_info["array_declarations"].append({
-                "data_stack_frame_offset": dsf_offset,
-                "length": array_length
-            })
+            procedure_info["array_declarations"].append(
+                {"data_stack_frame_offset": dsf_offset, "length": array_length}
+            )
 
         # Update removing EE Refs
-        for i in range(procedure_info["parameter_count"]-1, -1, -1): # EE Refs are assigned IN ORDER
-            procedure_info["parameters"][i]['ee'] = external_ref_counter
+        for i in range(
+            procedure_info["parameter_count"] - 1, -1, -1
+        ):  # EE Refs are assigned IN ORDER
+            procedure_info["parameters"][i]["ee"] = external_ref_counter
             external_ref_counter += 2
 
         for i in range(len(procedure_info["global_references"])):
-            procedure_info["global_references"][i]['ee'] = external_ref_counter
+            procedure_info["global_references"][i]["ee"] = external_ref_counter
             external_ref_counter += 2
 
         # Create optimised LUTs to allow O(1) lookup based on ee
         procedure_info["cached_gr"] = {}
         for gr_entry in procedure_info["global_references"]:
-            procedure_info["cached_gr"][gr_entry['ee']] = gr_entry
-            
+            procedure_info["cached_gr"][gr_entry["ee"]] = gr_entry
+
         procedure_info["cached_cp"] = {}
         for cp_entry in procedure_info["called_procedures"]:
-            procedure_info["cached_cp"][cp_entry['ee']] = cp_entry
-            
+            procedure_info["cached_cp"][cp_entry["ee"]] = cp_entry
+
         procedure_info["cached_gd"] = {}
         for gd_entry in procedure_info["global_declarations"]:
-            procedure_info["cached_gd"][gd_entry['ee']] = gd_entry
+            procedure_info["cached_gd"][gd_entry["ee"]] = gd_entry
 
         if loader.first_proc:
             loader.first_proc = False
 
         procedure_info["max_ee_ref"] = external_ref_counter
-        procedure_info["qcode"] = binary[binary_offset:binary_offset + procedure_info["qcode_len"]]
+        procedure_info["qcode"] = binary[
+            binary_offset : binary_offset + procedure_info["qcode_len"]
+        ]
 
         return procedure_info
 
-    
-    def _read_qstr(
-        offset:int,
-        buffer: bytes
-    ) ->str:
-
+    def _read_qstr(offset: int, buffer: bytes) -> str:
         l = buffer[offset]
         if l == 0:
             return ""
 
-        return buffer[offset+1:offset+1+l].decode("ascii", "replace")
+        return buffer[offset + 1 : offset + 1 + l].decode("ascii", "replace")

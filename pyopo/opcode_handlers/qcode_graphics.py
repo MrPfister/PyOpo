@@ -1,17 +1,18 @@
 import struct
 from pyopo.filehandler_filesystem import *
 from pyopo.window_manager import DrawableSprite
-import logging       
-import logging.config   
+import logging
+import logging.config
 
 from pyopo.heap import data_stack
 from pyopo.var_stack import stack
 
 logging.config.fileConfig(fname="logger.conf")
-_logger = logging.getLogger()                            
-#_logger.setLevel(logging.DEBUG)
+_logger = logging.getLogger()
+# _logger.setLevel(logging.DEBUG)
 
 from pyopo import pyopo
+
 
 def qcode_gcls(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0xD1 - gCLS")
@@ -47,17 +48,17 @@ def qcode_gidentity(procedure, data_stack: data_stack, stack: stack):
 def qcode_gx(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0x2C - PUSH% gX")
     stack.push(0, procedure.get_graphics_context().gX())
-    
+
 
 def qcode_gy(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0x2D - PUSH% gY")
     stack.push(0, procedure.get_graphics_context().gY())
 
-    
+
 def qcode_goriginx(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0x30 - PUSH% gORIGINX")
     stack.push(0, procedure.get_graphics_context().gORIGINX())
-    
+
 
 def qcode_goriginy(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0x31 - PUSH% gORIGINY")
@@ -168,7 +169,7 @@ def qcode_gpoly(procedure, data_stack, stack) -> None:
     y = data_stack.read(0, dsf_offset + 2)
     operations = data_stack.read(0, dsf_offset + 4)
 
-    _logger.debug(f'0xDE - gPOLY: {x}, {y}, Operations: {operations}')
+    _logger.debug(f"0xDE - gPOLY: {x}, {y}, Operations: {operations}")
 
     ops = []
     for i in range(operations):
@@ -205,7 +206,7 @@ def qcode_gprint(procedure, data_stack, stack) -> None:
     _logger.debug(f"{hex(op_code)} - gPRINT pop+ ;")
 
     # Sanitise text
-    text = str(stack.pop()).replace('\00', '') + ' '
+    text = str(stack.pop()).replace("\00", "") + " "
 
     if len(text) > 0:
         _logger.debug(f" - gPRINT '{text}' {len(text)} characters")
@@ -214,7 +215,7 @@ def qcode_gprint(procedure, data_stack, stack) -> None:
 
 def qcode_gprint_comma(procedure, data_stack, stack) -> None:
     _logger.debug("0xD8 - gPRINT ,")
-    procedure.get_graphics_context().gPRINT(' ')
+    procedure.get_graphics_context().gPRINT(" ")
 
 
 def qcode_gprintb(procedure, data_stack, stack) -> None:
@@ -309,12 +310,7 @@ def qcode_gfill(procedure, data_stack: data_stack, stack: stack):
     procedure.get_graphics_context().gFILL(width, height, gmode)
 
 
-def qcode_gbox(
-    procedure,
-    data_stack,
-    stack
-) -> None:
-
+def qcode_gbox(procedure, data_stack, stack) -> None:
     _logger.debug("0xD8 - gBOX")
 
     width, height = stack.pop_2()
@@ -327,7 +323,7 @@ def qcode_gclock(procedure, data_stack: data_stack, stack: stack):
     arg = procedure.read_qcode_byte()
 
     if arg > 1:
-        for i in range(arg-1):
+        for i in range(arg - 1):
             stack.pop()
         _logger.debug(f" - gCLOCK arg count = {arg-1}")
     elif arg == 0:
@@ -337,9 +333,9 @@ def qcode_gclock(procedure, data_stack: data_stack, stack: stack):
         _logger.debug(f" - gCLOCK ON")
         pass
 
-    #_logger.warning(f"gCLOCK - STUB")
+    # _logger.warning(f"gCLOCK - STUB")
 
-    #graphics_cursor = procedure.get_graphics_context()
+    # graphics_cursor = procedure.get_graphics_context()
 
 
 def qcode_gvisible(procedure, data_stack, stack) -> None:
@@ -349,12 +345,7 @@ def qcode_gvisible(procedure, data_stack, stack) -> None:
     procedure.get_graphics_context().gVISIBLE(mode)
 
 
-def qcode_gpeekline(
-    procedure,
-    data_stack,
-    stack
-) -> None:
-
+def qcode_gpeekline(procedure, data_stack, stack) -> None:
     _logger.debug("0xE6 - gPEEKLINE  pop%5 pop%4 pop%3 pop%2 pop%1")
 
     ln = stack.pop()
@@ -363,22 +354,22 @@ def qcode_gpeekline(
     id = stack.pop()
 
     _logger.debug(f" - gPEEKLINE {id}, {x}, {y}, {d_addr}, {ln}")
-    line_data_bits = procedure.get_window_manager().gPEEKLINE(
-        id, x, y, ln)
+    line_data_bits = procedure.get_window_manager().gPEEKLINE(id, x, y, ln)
     _logger.debug(line_data_bits)
 
     # Bits need to be packed to 16bit words
     bits_required = int(len(line_data_bits) / 16)
-    bits_required += 16 if (len(line_data_bits) -
-                            bits_required * 16) > 0 else 0
+    bits_required += 16 if (len(line_data_bits) - bits_required * 16) > 0 else 0
 
-    bitstring = line_data_bits.rjust(bits_required, '0')
+    bitstring = line_data_bits.rjust(bits_required, "0")
     for i in range(0, len(bitstring), 16):
-        bitvalue = int(bitstring[i:i+16], 2)
+        bitvalue = int(bitstring[i : i + 16], 2)
 
-        _logger.debug(f"{bitstring[i:i+16]} > {bitvalue} to DSF {d_addr + int(i/16) * 2}")
+        _logger.debug(
+            f"{bitstring[i:i+16]} > {bitvalue} to DSF {d_addr + int(i/16) * 2}"
+        )
         # Iterate through the DSF as a word as we write it out
-        data_stack.write(4, bitvalue, d_addr + int(i/16) * 2)
+        data_stack.write(4, bitvalue, d_addr + int(i / 16) * 2)
 
 
 def qcode_gloadbit(procedure, data_stack: data_stack, stack: stack):
@@ -398,9 +389,9 @@ def qcode_gloadbit(procedure, data_stack: data_stack, stack: stack):
 
     name = stack.pop()
 
-    if not '.' in name:
+    if not "." in name:
         # If there is no extension on the given file, .pic is assummed
-        name += '.PIC'
+        name += ".PIC"
 
     trans_name = translate_path_from_sibo(name, procedure.executable)
     _logger.debug(f" - gLOADBIT {name} > {trans_name} {write} {index}")
@@ -418,21 +409,23 @@ def qcode_gloadbit(procedure, data_stack: data_stack, stack: stack):
         # Extract the corresponding binary data from the OPA file itself
         id = None
         for e in procedure.executable.embedded_files:
-            if not open_addr_offset or open_addr_offset == e['start_offset']:
-                if e['type'] == 'PIC':
+            if not open_addr_offset or open_addr_offset == e["start_offset"]:
+                if e["type"] == "PIC":
                     _logger.debug(" - Loading internal PIC from OPA")
-                    pic_binary = procedure.executable.binary[e['start_offset']                                                             :e['end_offset']]
+                    pic_binary = procedure.executable.binary[
+                        e["start_offset"] : e["end_offset"]
+                    ]
                     id = procedure.executable.window_manager.gLOADBIT_binary(
-                        pic_binary, write, index)
+                        pic_binary, write, index
+                    )
                     break
 
         if not id:
             # Could not find an embedded PIC file
-            raise ('No embedded PIC file detected')
+            raise ("No embedded PIC file detected")
     else:
         # Load from an external .PIC file
-        id = procedure.get_window_manager().gLOADBIT(
-            trans_name, write, index)
+        id = procedure.get_window_manager().gLOADBIT(trans_name, write, index)
 
     stack.push(0, id)
 
@@ -498,7 +491,7 @@ def qcode_gtmode(procedure, data_stack: data_stack, stack: stack):
 
     mode = stack.pop()
 
-    #_logger.warning(f" - gTMODE {mode} - STUB")
+    # _logger.warning(f" - gTMODE {mode} - STUB")
     procedure.get_graphics_context().gTMODE(mode)
 
 
@@ -519,8 +512,7 @@ def qcode_ginfo(procedure, data_stack: data_stack, stack: stack):
 def qcode_gcreatebit(procedure, data_stack: data_stack, stack: stack):
     w, h = stack.pop_2()
 
-    id = procedure.get_window_manager().gCREATE(
-        0, 0, w, h, False, 0, drawable=True)
+    id = procedure.get_window_manager().gCREATE(0, 0, w, h, False, 0, drawable=True)
 
     _logger.debug(f"0x57 0x27 - gCREATEBIT({w}, {h}) -> {id}")
 
@@ -536,7 +528,6 @@ def qcode_ginvert(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_gscroll(procedure, data_stack: data_stack, stack: stack):
-
     args = procedure.read_qcode_byte()
 
     xpos = None
@@ -586,8 +577,7 @@ def qcode_appendsprite(procedure, data_stack: data_stack, stack: stack):
         if len(dsf_text) == 0:
             trans_name = ""
         else:
-            trans_name = translate_path_from_sibo(
-                dsf_text, procedure.executable)
+            trans_name = translate_path_from_sibo(dsf_text, procedure.executable)
 
         _logger.debug(f"{dsf_text} -> {trans_name}")
         spritelist.append(trans_name)

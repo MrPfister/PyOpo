@@ -1,5 +1,5 @@
-import logging       
-import logging.config   
+import logging
+import logging.config
 
 from pyopo import menu_manager
 
@@ -7,15 +7,16 @@ from pyopo.heap import data_stack
 from pyopo.var_stack import stack
 
 logging.config.fileConfig(fname="logger.conf")
-_logger = logging.getLogger()                            
-#_logger.setLevel(logging.DEBUG)
+_logger = logging.getLogger()
+# _logger.setLevel(logging.DEBUG)
+
 
 def qcode_minit(procedure, data_stack: data_stack, stack: stack):
     _logger.debug(f"0xEA - mINIT")
 
     # Initialise new Menu
     procedure.executable.menu_manager = menu_manager.Menu()
-    
+
 
 def qcode_mcard(procedure, data_stack: data_stack, stack: stack):
     _logger.debug(f"0xEB - mCARD")
@@ -33,7 +34,7 @@ def qcode_mcard(procedure, data_stack: data_stack, stack: stack):
 
     # Reverse the menu item order to be in correct visual order
     mcard_items.reverse()
-    
+
     mcard_title = stack.pop()
     print(f"Menu Title: {mcard_title}")
 
@@ -50,12 +51,14 @@ def qcode_menu_var(procedure, data_stack: data_stack, stack: stack):
     item_index = value % 256
     mcard_index = int(value / 256)
 
-    print(f" - Menu init%: {value} at DSF Offset: {dsf_offset} -> {mcard_index}, {item_index}")
-    
-    procedure.executable.menu_manager.MENU(mcard_index,item_index)
+    print(
+        f" - Menu init%: {value} at DSF Offset: {dsf_offset} -> {mcard_index}, {item_index}"
+    )
+
+    procedure.executable.menu_manager.MENU(mcard_index, item_index)
 
 
 def qcode_menu(procedure, data_stack: data_stack, stack: stack):
     _logger.debug(f"0x57 0x36 - MENU")
-    
-    procedure.executable.menu_manager.MENU(0,0)
+
+    procedure.executable.menu_manager.MENU(0, 0)

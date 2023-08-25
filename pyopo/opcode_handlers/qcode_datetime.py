@@ -1,25 +1,26 @@
 import datetime
 from datetime import date
 from pyopo.opl_exceptions import *
-import logging       
-import logging.config   
+import logging
+import logging.config
 
 from pyopo.heap import data_stack
 from pyopo.var_stack import stack
 
 logging.config.fileConfig(fname="logger.conf")
-_logger = logging.getLogger()                            
-#_logger.setLevel(logging.DEBUG)
+_logger = logging.getLogger()
+# _logger.setLevel(logging.DEBUG)
+
 
 def qcode_year(procedure, data_stack: data_stack, stack: stack):
     _logger.debug(f"0x57 0x1E - YEAR")
     stack.push(0, datetime.datetime.now().year)
-    
+
 
 def qcode_month(procedure, data_stack: data_stack, stack: stack):
     _logger.debug(f"0x57 0x17 - MONTH")
     stack.push(0, datetime.datetime.now().month)
-    
+
 
 def qcode_day(procedure, data_stack: data_stack, stack: stack):
     _logger.debug(f"0x57 0x04 - DAY")
@@ -34,7 +35,7 @@ def qcode_datetosecs(procedure, data_stack: data_stack, stack: stack):
 def qcode_hour(procedure, data_stack: data_stack, stack: stack):
     _logger.debug(f"0x57 0x12 - HOUR")
     stack.push(0, datetime.datetime.now().hour)
-    
+
 
 def qcode_minute(procedure, data_stack: data_stack, stack: stack):
     _logger.debug(f"0x57 0x16 - MINUTE")
@@ -52,34 +53,45 @@ def qcode_datim(procedure, data_stack: data_stack, stack: stack):
 
     datetime_string = datetime.datetime.now().strftime("%a %d %b %Y %H:%M:%S")
     stack.push(3, datetime_string)
-    
-    
+
 
 def qcode_month_str(procedure, data_stack: data_stack, stack: stack):
     _logger.debug(f"0x57 0xCD - MONTH$ pop%")
 
-    
-    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+    ]
 
     m = stack.pop()
 
     if m < 1 or m > 12:
-        raise(KErrOutOfRange)
+        raise (KErrOutOfRange)
 
-    stack.push(3, months[m-1])
+    stack.push(3, months[m - 1])
 
 
 def qcode_dayname(procedure, data_stack: data_stack, stack: stack):
     _logger.debug(f"0x57 0xC2 - DAYNAME$ pop%1")
 
-    daynames = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
+    daynames = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
 
     dow = stack.pop()
 
     if dow < 1 or dow > 7:
-        raise(KErrOutOfRange)
+        raise (KErrOutOfRange)
 
-    stack.push(3, daynames[dow-1])
+    stack.push(3, daynames[dow - 1])
 
 
 def qcode_days(procedure, data_stack: data_stack, stack: stack):
@@ -91,19 +103,19 @@ def qcode_days(procedure, data_stack: data_stack, stack: stack):
 
     # Input validation
     if y < 1900 or y > 2100:
-        raise(KErrOutOfRange)
-    
+        raise (KErrOutOfRange)
+
     if m < 1 or m > 12:
-        raise(KErrOutOfRange)
-    
+        raise (KErrOutOfRange)
+
     if d < 1 or d > 31:
-        raise(KErrOutOfRange)
+        raise (KErrOutOfRange)
 
     # Returns the number of days since 1/1/1900
     delta = date(y, m, d) - date(1900, 1, 1)
     days = delta.days
 
-    print (f" - DAYS {d} {m} {y} = {days}")
+    print(f" - DAYS {d} {m} {y} = {days}")
     stack.push(0, days)
 
 
@@ -119,7 +131,7 @@ def qcode_secstodate(procedure, data_stack: data_stack, stack: stack):
     yr_addr = stack.pop()
     s = stack.pop()
 
-    secstodate=datetime.datetime.fromtimestamp(s)
+    secstodate = datetime.datetime.fromtimestamp(s)
 
     data_stack.write(0, secstodate.year, yr_addr)
     data_stack.write(0, secstodate.month, mo_addr)

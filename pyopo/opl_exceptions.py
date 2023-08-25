@@ -1,4 +1,3 @@
-
 import struct
 import json
 import os
@@ -8,12 +7,12 @@ import pygame
 from pygame.locals import *
 from .opcodes import *
 
-import logging       
-import logging.config   
+import logging
+import logging.config
 
 logging.config.fileConfig(fname="logger.conf")
-_logger = logging.getLogger()                            
-#_logger.setLevel(logging.DEBUG) 
+_logger = logging.getLogger()
+# _logger.setLevel(logging.DEBUG)
 
 # OPL32 Error Constants - Formatting consistent with OPL32 manual not Python
 
@@ -42,12 +41,10 @@ opl_error_code_descriptions = {
     -19: "File system not found (e.g. if you unplug cable to PC)",
     -20: "Failed to start",
     -21: "Font not loaded",
-
     -22: "Too wide (dialogs)",
     -23: "Too many items (dialogs)",
     -24: "Batteries too low for digital audio",
     -25: "Batteries too low to write to Flash",
-
     -32: "File already exists",
     -33: "File does not exist",
     -34: "Write failed",
@@ -76,7 +73,6 @@ opl_error_code_descriptions = {
     -58: "Cannot connect to remote modem",
     -59: "Remote modem busy",
     -60: "No answer from remote modem",
-
     -61: "Number is black listed (you may try a number only a certain number of times; wait a while and try again)",
     -62: "Not ready",
     -63: "Unknown media (corrupt SSD)",
@@ -86,7 +82,6 @@ opl_error_code_descriptions = {
     -67: "User abandoned",
     -68: "Erase pack failure",
     -69: "Wrong file type",
-
     -70: "Missing quotation",
     -71: "String too long",
     -72: "Unexpected name",
@@ -109,12 +104,10 @@ opl_error_code_descriptions = {
     -89: "Bad field list",
     -90: "Too complex",
     -91: "Missing ,",
-
     -92: "Variables too large",
     -93: "Bad assignment",
     -94: "Bad array index",
     -95: "Inconsistent procedure arguments",
-
     -96: "Illegal Opcode (corrupt module translate again)",
     -97: "Wrong number of arguments (to a function or parameters to a procedure)",
     -98: "Undefined externals (a variable has been encountered which hasn’t been declared)",
@@ -140,11 +133,10 @@ opl_error_code_descriptions = {
     -118: "Drawable not open",
     -119: "Invalid Window (window operation attempted on a bitmap)",
     -120: "Screen access denied (when run from Calculator)",
-
     -121: "OPX not found",
     -122: "Incompatible OPX version",
     -123: "OPX procedure not found",
     -124: "STOP used in callback from OPX",
     -125: "Incompatible update mode",
-    -126: "In database transaction or started changing fields"
+    -126: "In database transaction or started changing fields",
 }
