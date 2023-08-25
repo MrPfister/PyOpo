@@ -1,7 +1,5 @@
-import os
 import json
 import struct
-import sys
 from functools import lru_cache
 from pyopo.filehandler_filesystem import *
 from typing import Self

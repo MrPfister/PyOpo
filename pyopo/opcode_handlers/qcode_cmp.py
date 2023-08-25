@@ -1,5 +1,3 @@
-import struct
-import math
 import statistics
 import logging
 import logging.config

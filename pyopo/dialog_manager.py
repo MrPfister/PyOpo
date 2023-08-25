@@ -1,8 +1,3 @@
-import os
-import json
-import struct
-import sys
-
 from pyopo.filehandler_filesystem import *
 
 import pygame
@@ -253,7 +248,7 @@ class Dialog:
     def handle_keypress(self, evt_id):
         print(f"Handling Dialog Keypress: {evt_id}")
 
-        if self.selected_item != None:  # Would be 0 if there are no selectable items
+        if self.selected_item is not None:  # Would be 0 if there are no selectable items
             if evt_id == 257:
                 print("Down Pressed")
                 # Down Arrow Key
@@ -308,7 +303,7 @@ class Dialog:
                                 and evt_id == K_PERIOD
                             ):
                                 # dFLOAT allows for decimal
-                                if not "." in self.dialog_items[i]["value"]:
+                                if "." not in self.dialog_items[i]["value"]:
                                     self.dialog_items[i]["value"] += "."
                             elif (
                                 evt_id == K_MINUS
