@@ -1,4 +1,4 @@
-from typing import Optional, Any, Self
+from typing import Optional, Any, Self, List
 import struct
 
 # Debuggers
@@ -14,6 +14,30 @@ _logger = logging.getLogger()
 # _logger.setLevel(logging.DEBUG)
 
 
+class free_block:
+    """Meta class to store locations of contiguous sections of free memory in the heap"""
+
+    def __init__(self, start: int, length: int):
+        self.start = start
+        self.length = length
+        self.end = start + length - 1
+
+
+class data_frame:
+    """Meta class to store locations of allocated sections of memory in the heap"""
+
+    def __init__(self, start: int, length: int):
+        self.start = start
+        self.length = length
+
+    def in_frame(self, offset: int) -> bool:
+        """Return whether a heap offset resides inside the frame"""
+        if offset >= self.start and offset < self.start + self.length:
+            return True
+
+        return False
+
+
 class data_stack:
     def __init__(self, size: int, debugger: Optional[DebuggerDSF] = None):
         # Cache struct pack
@@ -22,20 +46,23 @@ class data_stack:
         self._struct_unpacker_float = struct.Struct("<d")
         self._struct_unpacker_long = struct.Struct("<i")
 
-        self.free_blocks = [{"start": 0, "length": size, "end": size - 1}]
-
-        self.frames = []
+        self.free_blocks: List[free_block] = [free_block(start=0, length=size)]
+        self.frames: List[data_frame] = []
 
         # Underlying memory
         self.memory = bytearray(size)
 
         self.debugger = debugger
 
-    def allocate_frame(self, size: int):
+    def allocate_frame(self, size: int) -> int:
+        """Allocates a section of specified size in the heap.
+
+        Returns the start offset of the allocated frame"""
+
         # Find free block within the data stack
         free_block_index = -1
         for i in range(len(self.free_blocks)):
-            if self.free_blocks[i]["length"] >= size:
+            if self.free_blocks[i].length >= size:
                 free_block_index = i
                 break
 
@@ -43,35 +70,31 @@ class data_stack:
             raise ("No available memory")
 
         # Construct Data Stack Frame
-        entry = {"size": size, "offset": self.free_blocks[free_block_index]["start"]}
-        _logger.info(f"Allocating DSF Size: {size} at Offset: {entry['offset']}")
+        entry = data_frame(start=self.free_blocks[free_block_index].start, length=size)
+        _logger.info(f"Allocating DSF Size: {size} at Offset: {entry.start}")
 
         if self.debugger:
-            self.debugger.store_alloc_block(
-                entry["offset"], entry["offset"] + entry["size"]
-            )
+            self.debugger.store_alloc_block(entry.start, entry.start + entry.length)
 
-        if self.free_blocks[free_block_index]["length"] == size:
+        if self.free_blocks[free_block_index].length == size:
             # Remove block
             self.free_blocks.pop(free_block_index)
         else:
             # Resize block
-            self.free_blocks[free_block_index]["start"] += size
-            self.free_blocks[free_block_index]["length"] -= size
+            self.free_blocks[free_block_index].start += size
+            self.free_blocks[free_block_index].length -= size
 
         self.frames.append(entry)
 
         # Reinitialise the frame
-        self.memory[entry["offset"] : entry["offset"] + entry["size"]] = (
-            b"\x00" * entry["size"]
-        )
+        self.memory[entry.start : entry.start + entry.length] = b"\x00" * entry.length
 
-        return entry["offset"]
+        return entry.start
 
-    def free_frame(self, offset: int):
+    def free_frame(self, offset: int) -> None:
         block_index = -1
         for i in range(len(self.frames)):
-            if self.frames[i]["offset"] >= offset:
+            if self.frames[i].in_frame(offset):
                 block_index = i
                 break
 
@@ -82,23 +105,19 @@ class data_stack:
 
         if self.debugger:
             self.debugger.free_alloc_block(
-                offset, offset + self.frames[block_index]["size"]
+                offset, offset + self.frames[block_index].length
             )
             self.debugger.free_proc_vars(
-                offset, offset + self.frames[block_index]["size"]
+                offset, offset + self.frames[block_index].length
             )
 
         self.free_blocks.append(
-            {
-                "start": offset,
-                "length": self.frames[block_index]["size"],
-                "end": offset + self.frames[block_index]["size"] - 1,
-            }
+            free_block(start=offset, length=self.frames[block_index].length)
         )
 
         self.frames.pop(block_index)
 
-    def write(self, type, value, offset):
+    def write(self, type: int, value: Any, offset: int) -> None:
         if type == 0:
             # 2 Byte Word
             data_bytes = self._struct_unpacker_int16.pack(value)
@@ -123,7 +142,9 @@ class data_stack:
         # Update memory in place
         self.memory[offset : offset + len(data_bytes)] = data_bytes
 
-    def read(self, type, offset, array_index=1) -> Any:  # OPL arrays start at 1
+    def read(
+        self, type: int, offset: int, array_index: int = 1
+    ) -> Any:  # OPL arrays start at 1
         if type == 0:
             # 2 Byte Word
             return self._struct_unpacker_int16.unpack_from(
