@@ -1,3 +1,4 @@
+import os
 from pyopo import dialog_manager
 
 from pyopo.heap import data_stack
