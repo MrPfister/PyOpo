@@ -45,6 +45,15 @@ The interpreter utilises a dynamic heap containing data frames, however the debu
 
 Currently global locations are not reserved in the heap, and are only 'pinned' to the first active procedure that declared it. If that procedure has returned, the reference to the global is lost. It is unknown (untested) whether this is expected behaviour
 
+## Usage Instructions
+
+This runtime does not include any example applications. To use it:
+
+* Download an OPA (search for 'Psion OPA' or 'Psion 3 games' online)
+* Unpack the app into DRIVE\M\APP\ or according to the apps instructions
+* Update 'executable_location' in launcher.py
+* Run launcher.py
+
 ## Missing or incomplete features
 
 * (Missing) Ability to load specific formats - .WVE
