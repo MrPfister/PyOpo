@@ -5,7 +5,7 @@ import os
 import time
 import pygame
 from pygame.locals import *
-from typing import Optional, Any, Self
+from typing import Optional, Any, Self, Dict
 
 from .loader import *
 
@@ -458,6 +458,9 @@ class stack_entry:
         # Cached struct unpackers
         self._struct_unpacker_uint16 = struct.Struct("<H")
         self._struct_unpacker_int16 = struct.Struct("<h")
+
+        # Cache for EE references used by the procedure
+        self.ee_dsf_cache: Dict[int, int] = {}
 
         # Link to the parent executable
         self.executable = executable

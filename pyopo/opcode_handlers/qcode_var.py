@@ -331,25 +331,28 @@ def qcode_push_ee_addr(procedure, data_stack: data_stack, stack: stack):
     # print(f"{hex(op_code)} - push= the address of EE+ [cannot be a parameter]")
 
     ee_ref = procedure.read_qcode_uint16()
-    dsf_offset = -1
 
-    # Attempt to find the EE
-    gd_entry = procedure.procedure["cached_gd"].get(ee_ref)
-    if gd_entry:
-        gd_name = gd_entry["name"]
+    # Check to see if the EE reference is already cached, to remove the lookup overhead
+    dsf_offset = procedure.ee_dsf_cache.get(ee_ref, -1)
 
-        # Check the first instance in the DS
-        for proc in procedure.executable.proc_stack:
-            for gd in proc.procedure["global_declarations"]:
-                if gd["name"] == gd_name:
-                    dsf_offset = (
-                        proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
-                    )  # DSF Offset is for callee Proc
-                    # print(f"Found Global Reference {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
+    if dsf_offset == -1:
+        # Attempt to find the EE
+        gd_entry = procedure.procedure["cached_gd"].get(ee_ref)
+        if gd_entry:
+            gd_name = gd_entry["name"]
+
+            # Check the first instance in the DS
+            for proc in procedure.executable.proc_stack:
+                for gd in proc.procedure["global_declarations"]:
+                    if gd["name"] == gd_name:
+                        dsf_offset = (
+                            proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
+                        )  # DSF Offset is for callee Proc
+                        # print(f"Found Global Reference {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
+                        break
+
+                if dsf_offset != -1:
                     break
-
-            if dsf_offset != -1:
-                break
 
     if dsf_offset == -1:
         gr_entry = procedure.procedure["cached_gr"].get(ee_ref)
@@ -372,6 +375,9 @@ def qcode_push_ee_addr(procedure, data_stack: data_stack, stack: stack):
     if dsf_offset == -1:
         raise (f"Unable to find EE value: {ee_ref}")
 
+    # Cache the DSF offset for future use
+    procedure.ee_dsf_cache[ee_ref] = dsf_offset
+
     # print(f" - max EE ref: {procedure.procedure['max_ee_ref']}")
     # print(f" - Storing DSF Addr {dsf_offset} of EE ref {ee_ref}")
 
@@ -382,25 +388,28 @@ def qcode_push_ee_value(procedure, data_stack: data_stack, stack: stack):
     # print(f"{hex(op_code)} - push+ the value of EE+")
 
     ee_ref = procedure.read_qcode_uint16()
-    dsf_offset = -1
+
+    # Check to see if the EE reference is already cached, to remove the lookup overhead
+    dsf_offset = procedure.ee_dsf_cache.get(ee_ref, -1)
 
     # Attempt to find the EE
-    gd_entry = procedure.procedure["cached_gd"].get(ee_ref)
-    if gd_entry:
-        gd_name = gd_entry["name"]
+    if dsf_offset == -1:
+        gd_entry = procedure.procedure["cached_gd"].get(ee_ref)
+        if gd_entry:
+            gd_name = gd_entry["name"]
 
-        # Check the first instance in the DS
-        for proc in procedure.executable.proc_stack:
-            for gd in proc.procedure["global_declarations"]:
-                if gd["name"] == gd_name:
-                    dsf_offset = (
-                        proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
-                    )  # DSF Offset is for callee Proc
-                    # print(f"Found Global Reference {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
+            # Check the first instance in the DS
+            for proc in procedure.executable.proc_stack:
+                for gd in proc.procedure["global_declarations"]:
+                    if gd["name"] == gd_name:
+                        dsf_offset = (
+                            proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
+                        )  # DSF Offset is for callee Proc
+                        # print(f"Found Global Reference {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
+                        break
+
+                if dsf_offset != -1:
                     break
-
-            if dsf_offset != -1:
-                break
 
     if dsf_offset == -1:
         gr_entry = procedure.procedure["cached_gr"].get(ee_ref)
@@ -433,6 +442,9 @@ def qcode_push_ee_value(procedure, data_stack: data_stack, stack: stack):
 
     if dsf_offset == -1:
         raise (f"Unable to find EE ref: {ee_ref}")
+    else:
+        # Cache the DSF offset for future use (when not a param)
+        procedure.ee_dsf_cache[ee_ref] = dsf_offset
 
     # print(f" - max EE ref: {procedure.procedure['max_ee_ref']}")
     # print(f" - Retrieving value for DSF Addr {dsf_offset} of EE ref {ee_ref}")
@@ -471,31 +483,35 @@ def qcode_push_ee_array_addr(procedure, data_stack: data_stack, stack: stack):
     )
 
     ee_ref = procedure.read_qcode_uint16()
-    dsf_offset = -1
+    array_type = procedure.get_executed_opcode() - 0x1C
+
+    # Check to see if the EE reference is already cached when not referencing a string
+    dsf_offset = -1 if array_type == 3 else procedure.ee_dsf_cache.get(ee_ref, -1)
 
     ref_proc = None
 
     # Attempt to find the EE
 
-    gd_entry = procedure.procedure["cached_gd"].get(ee_ref)
-    if gd_entry:
-        gd_name = gd_entry["name"]
+    if dsf_offset == -1:
+        gd_entry = procedure.procedure["cached_gd"].get(ee_ref)
+        if gd_entry:
+            gd_name = gd_entry["name"]
 
-        # Check the first instance in the DS
-        for proc in procedure.executable.proc_stack:
-            for gd in proc.procedure["global_declarations"]:
-                if gd["name"] == gd_name:
-                    ref_proc = proc
-                    dsf_offset = (
-                        proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
-                    )  # DSF Offset is for callee Proc
-                    _logger.debug(
-                        f"Found Global Declaration {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}"
-                    )
+            # Check the first instance in the DS
+            for proc in procedure.executable.proc_stack:
+                for gd in proc.procedure["global_declarations"]:
+                    if gd["name"] == gd_name:
+                        ref_proc = proc
+                        dsf_offset = (
+                            proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
+                        )  # DSF Offset is for callee Proc
+                        _logger.debug(
+                            f"Found Global Declaration {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}"
+                        )
+                        break
+
+                if dsf_offset != -1:
                     break
-
-            if dsf_offset != -1:
-                break
 
     if dsf_offset == -1:
         for gr in procedure.procedure["global_references"]:
@@ -524,9 +540,9 @@ def qcode_push_ee_array_addr(procedure, data_stack: data_stack, stack: stack):
     if dsf_offset == -1:
         raise (f"Unable to find EE Ref: {ee_ref}")
 
-    # print(f" - max EE ref: {procedure.procedure['max_ee_ref']}")
+    # Cache the DSF offset for future use
+    procedure.ee_dsf_cache[ee_ref] = dsf_offset
 
-    array_type = procedure.get_executed_opcode() - 0x1C
     array_index = stack.pop() - 1  # OPL addresses start at 1
 
     if array_type == 0:
@@ -588,34 +604,40 @@ def qcode_push_ee_array_val(procedure, data_stack: data_stack, stack: stack):
     )
 
     ee_ref = procedure.read_qcode_uint16()
-    dsf_offset = -1
+    array_type = procedure.get_executed_opcode() - 0x18
+
+    # Check to see if the EE reference is already cached if its not a string
+    dsf_offset = -1 if array_type == 3 else procedure.ee_dsf_cache.get(ee_ref, -1)
+
     ref_proc = None
 
-    # Attempt to find the EE
-    gd_list = list(
-        filter(
-            lambda gd: gd["ee"] == ee_ref, procedure.procedure["global_declarations"]
+    if dsf_offset == -1:
+        # Attempt to find the EE
+        gd_list = list(
+            filter(
+                lambda gd: gd["ee"] == ee_ref,
+                procedure.procedure["global_declarations"],
+            )
         )
-    )
-    if len(gd_list) > 0:
-        gd = gd_list[-1]
-        gd_name = gd["name"]
+        if len(gd_list) > 0:
+            gd = gd_list[-1]
+            gd_name = gd["name"]
 
-        # Check the first instance in the DS
-        for proc in procedure.executable.proc_stack:
-            for gd in proc.procedure["global_declarations"]:
-                if gd["name"] == gd_name:
-                    ref_proc = proc
-                    dsf_offset = (
-                        proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
-                    )  # DSF Offset is for callee Proc
-                    _logger.debug(
-                        f"Found Global Declaration {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}"
-                    )
+            # Check the first instance in the DS
+            for proc in procedure.executable.proc_stack:
+                for gd in proc.procedure["global_declarations"]:
+                    if gd["name"] == gd_name:
+                        ref_proc = proc
+                        dsf_offset = (
+                            proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
+                        )  # DSF Offset is for callee Proc
+                        _logger.debug(
+                            f"Found Global Declaration {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}"
+                        )
+                        break
+
+                if dsf_offset != -1:
                     break
-
-            if dsf_offset != -1:
-                break
 
     if dsf_offset == -1:
         for gr in procedure.procedure["global_references"]:
@@ -645,7 +667,9 @@ def qcode_push_ee_array_val(procedure, data_stack: data_stack, stack: stack):
         # _logger.warning(f'Unable to determine EE ref: {ee_ref}')
         raise (f"Unable to determine EE ref: {ee_ref}")
 
-    array_type = procedure.get_executed_opcode() - 0x18
+    # Cache the DSF offset for future use
+    procedure.ee_dsf_cache[ee_ref] = dsf_offset
+
     array_index = stack.pop() - 1  # OPL indexes start at 1
 
     if array_index < 0:
