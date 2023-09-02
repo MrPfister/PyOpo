@@ -59,30 +59,25 @@ class data_stack:
 
         Returns the start offset of the allocated frame"""
 
-        # Find free block within the data stack
-        free_block_index = -1
-        for i in range(len(self.free_blocks)):
-            if self.free_blocks[i].length >= size:
-                free_block_index = i
-                break
+        # Find an available free block large enough
+        free_block_entry = next((b for b in self.free_blocks if b.length >= size), None)
 
-        if free_block_index == -1:
+        if not free_block_entry:
             raise ("No available memory")
 
         # Construct Data Stack Frame
-        entry = data_frame(start=self.free_blocks[free_block_index].start, length=size)
+        entry = data_frame(start=free_block_entry.start, length=size)
         _logger.info(f"Allocating DSF Size: {size} at Offset: {entry.start}")
 
         if self.debugger:
             self.debugger.store_alloc_block(entry.start, entry.start + entry.length)
 
-        if self.free_blocks[free_block_index].length == size:
-            # Remove block
-            self.free_blocks.pop(free_block_index)
+        if free_block_entry.length == size:
+            self.free_blocks.remove(free_block_entry)
         else:
-            # Resize block
-            self.free_blocks[free_block_index].start += size
-            self.free_blocks[free_block_index].length -= size
+            # Resize free block instead of just removing it
+            free_block_entry.start += size
+            free_block_entry.length -= size
 
         self.frames.append(entry)
 
@@ -92,30 +87,23 @@ class data_stack:
         return entry.start
 
     def free_frame(self, offset: int) -> None:
-        block_index = -1
-        for i in range(len(self.frames)):
-            if self.frames[i].in_frame(offset):
-                block_index = i
-                break
+        # Find if there is a frame where the offset resides
+        frame_to_free = next((f for f in self.frames if f.in_frame(offset)), None)
 
-        if block_index == -1:
-            # _logger.warning(f'DSF Frame not found, Offset: {offset} in frames {self.frames}')
+        if not frame_to_free:
+            _logger.warning(
+                f"DSF Frame not found, Offset: {offset} in frames {self.frames}"
+            )
             # raise ("Data Stack Frame entry not found")
             return
 
         if self.debugger:
-            self.debugger.free_alloc_block(
-                offset, offset + self.frames[block_index].length
-            )
-            self.debugger.free_proc_vars(
-                offset, offset + self.frames[block_index].length
-            )
+            self.debugger.free_alloc_block(offset, offset + frame_to_free.length)
+            self.debugger.free_proc_vars(offset, offset + frame_to_free.length)
 
-        self.free_blocks.append(
-            free_block(start=offset, length=self.frames[block_index].length)
-        )
+        self.free_blocks.append(free_block(start=offset, length=frame_to_free.length))
 
-        self.frames.pop(block_index)
+        self.frames.remove(frame_to_free)
 
     def write(self, type: int, value: Any, offset: int) -> None:
         if type == 0:
