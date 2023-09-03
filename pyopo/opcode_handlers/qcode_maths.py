@@ -25,63 +25,49 @@ def qcode_cmp_minus(procedure, data_stack: data_stack, stack: stack):
 
     stack_type = procedure.get_executed_opcode() - 0x4C
 
-    pop_1 = stack.pop()
-    pop_2 = stack.pop()
-
+    pop_2, pop_1 = stack.pop_2()
     stack.push(stack_type, pop_2 - pop_1)
 
 
 def qcode_less_percent(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x6C - push* pop*2 < pop*1 %")
 
-    pop_1 = stack.pop()
-    pop_2 = stack.pop()
-
+    pop_2, pop_1 = stack.pop_2()
     stack.push(2, pop_2 / (100.0 + pop_1) * pop_1)
 
 
 def qcode_greater_percent(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x6D - push* pop*2 > pop*1 %")
 
-    pop_1 = stack.pop()
-    pop_2 = stack.pop()
-
+    pop_2, pop_1 = stack.pop_2()
     stack.push(2, pop_2 / (100.0 + pop_1) * 100.0)
 
 
 def qcode_plus_percent(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x6E - push* pop*2 + pop*1 %")
 
-    pop_1 = stack.pop()
-    pop_2 = stack.pop()
-
+    pop_2, pop_1 = stack.pop_2()
     stack.push(2, pop_2 / 100.0 * (100.0 + pop_1))
 
 
 def qcode_minus_percent(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x6F - push* pop*2 - pop*1 %")
 
-    pop_1 = stack.pop()
-    pop_2 = stack.pop()
-
+    pop_2, pop_1 = stack.pop_2()
     stack.push(2, pop_2 / 100.0 * (100.0 - pop_1))
 
 
 def qcode_mult_percent(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x70 - push* pop*2 * pop*1 %")
 
-    pop_1 = stack.pop()
-    pop_2 = stack.pop()
-
+    pop_2, pop_1 = stack.pop_2()
     stack.push(2, pop_2 / 100.0 * pop_1)
 
 
 def qcode_div_percent(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x71 - push* pop*2 / pop*1 %")
 
-    pop_1 = stack.pop()
-    pop_2 = stack.pop()
-
+    pop_2, pop_1 = stack.pop_2()
     stack.push(2, pop_2 / pop_1 * 100.0)
 
 
@@ -106,8 +92,7 @@ def qcode_cmp_div(procedure, data_stack: data_stack, stack: stack):
 
     stack_type = procedure.get_executed_opcode() - 0x54
 
-    pop_1 = stack.pop()
-    pop_2 = stack.pop()
+    pop_2, pop_1 = stack.pop_2()
 
     res = pop_2 / pop_1
 
@@ -123,8 +108,7 @@ def qcode_cmp_div(procedure, data_stack: data_stack, stack: stack):
 def qcode_cmp_plus(procedure, data_stack: data_stack, stack: stack):
     # print(f"{hex(op_code)} - push+ pop+2 + pop+1")
 
-    pop_1 = stack.pop()
-    pop_2 = stack.pop()
+    pop_2, pop_1 = stack.pop_2()
 
     stack_type = procedure.get_executed_opcode() - 0x48
     stack.push(stack_type, pop_2 + pop_1)
@@ -165,8 +149,7 @@ def qcode_pow(procedure, data_stack: data_stack, stack: stack):
 
     stack_type = procedure.get_executed_opcode() - 0x58
 
-    pop_1 = stack.pop()
-    pop_2 = stack.pop()
+    pop_2, pop_1 = stack.pop_2()
 
     res = math.pow(pop_2, pop_1)
 
