@@ -2,6 +2,8 @@ import statistics
 import logging
 import logging.config
 
+from typing import List
+
 from pyopo.heap import data_stack
 from pyopo.var_stack import stack
 
@@ -159,8 +161,7 @@ def qcode_max(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0x93 - Na MAX")
     na = procedure.read_qcode_byte()
 
-    num_list = get_na_array_list(na, data_stack, stack)
-    max_value = max(num_list)
+    max_value = max(get_na_array_list(na, data_stack, stack))
 
     stack.push(T_FLOAT, max_value)
 
@@ -169,8 +170,7 @@ def qcode_min(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0x95 - Na MIN")
     na = procedure.read_qcode_byte()
 
-    num_list = get_na_array_list(na, data_stack, stack)
-    max_value = min(num_list)
+    max_value = min(get_na_array_list(na, data_stack, stack))
 
     stack.push(T_FLOAT, max_value)
 
@@ -189,8 +189,7 @@ def qcode_std(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0x96 - Na STD")
     na = procedure.read_qcode_byte()
 
-    num_list = get_na_array_list(na, data_stack, stack)
-    max_value = statistics.stdev(num_list)
+    max_value = statistics.stdev(get_na_array_list(na, data_stack, stack))
 
     stack.push(T_FLOAT, max_value)
 
@@ -199,8 +198,7 @@ def qcode_sum(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0x97 - Na SUM")
     na = procedure.read_qcode_byte()
 
-    num_list = get_na_array_list(na, data_stack, stack)
-    max_value = sum(num_list)
+    max_value = sum(get_na_array_list(na, data_stack, stack))
 
     stack.push(T_FLOAT, max_value)
 
@@ -209,23 +207,25 @@ def qcode_var(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0x98 - Na VAR")
     na = procedure.read_qcode_byte()
 
-    num_list = get_na_array_list(na, data_stack, stack)
-    max_value = statistics.variance(num_list)
+    max_value = statistics.variance(get_na_array_list(na, data_stack, stack))
 
     stack.push(T_FLOAT, max_value)
 
 
-def get_na_array_list(na: int, data_stack: data_stack, stack: stack):
-    num_list = []
+def get_na_array_list(na: int, data_stack: data_stack, stack: stack) -> List[float]:
+    """Retrieves arguments for list operation opcodes.
+
+    The list of float arguments is either popped from the stack given an na value, or
+    retrieved from the datastack"""
     if na == 0:
         # Special case, array addr & number of elements
         element_count = stack.pop()
         addr = stack.pop()
-        for i in range(element_count):
-            num_list.append(data_stack.read(T_FLOAT, addr + (element_count - 1) * 8))
+
+        return [
+            data_stack.read(T_FLOAT, addr + (element_count - 1) * 8)
+            for _ in range(element_count)
+        ]
     else:
         # Equivalent to popping the number of items
-        for i in range(na):
-            num_list.append(stack.pop())
-
-    return num_list
+        return [stack.pop() for _ in range(na)]

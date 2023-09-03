@@ -19,7 +19,7 @@ SPECIAL_IO_HANDLES = ["TIM:"]
 
 
 def qcode_dir(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"0x57 0xC3 - push$ DIR$ pop$")
+    _logger.debug("0x57 0xC3 - push$ DIR$ pop$")
 
     d = stack.pop()
 
