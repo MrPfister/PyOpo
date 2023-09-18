@@ -16,6 +16,6 @@ if __name__ == "__main__":
 
     # Attach various debuggers
     executable.attach_dsf_debugger()
-    executable.attach_profiler()
+    # executable.attach_profiler()
 
     executable.execute()

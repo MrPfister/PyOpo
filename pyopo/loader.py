@@ -250,7 +250,7 @@ class loader:
             binary_offset += len(global_name) + 1
 
             if len(global_name) == 0:
-                # End of Section
+                # The section ends with an empty string
                 break
 
             type_code = int(binary[binary_offset])
@@ -268,6 +268,7 @@ class loader:
             dsf_offset = struct.unpack_from("<H", binary, binary_offset)[0]
             binary_offset += 2
             if dsf_offset == 0:
+                # The section ends with an address of 0
                 break
 
             string_length = int(binary[binary_offset])

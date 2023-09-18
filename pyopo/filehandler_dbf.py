@@ -102,7 +102,7 @@ class dbf:
         self.current_record = {}
         self.current_record_index = 0
 
-    def load(self):
+    def load(self) -> None:
         _logger.debug(f" - Loading DBF File: {self.translated_Filename}")
         with open(self.translated_Filename, "rb") as file:
             self.binary = file.read()
@@ -115,11 +115,11 @@ class dbf:
 
         input()
 
-    def create(self):
+    def create(self) -> None:
         self.header = dbf_header.default()
         self.records = []
 
-    def append(self):
+    def append(self) -> None:
         self.records.append(self.current_record.copy())
         self.current_record = self.header_fields.copy()
 

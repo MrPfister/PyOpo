@@ -506,19 +506,19 @@ class stack_entry:
                 self.data_stack_frame_offset + arr_dec["data_stack_frame_offset"],
             )
 
-    def set_program_counter(self, index: int):
+    def set_program_counter(self, index: int) -> None:
         self._program_counter = index
 
-    def set_program_counter_delta(self, delta: int):
+    def set_program_counter_delta(self, delta: int) -> None:
         self._program_counter += delta
 
-    def get_program_counter(self):
+    def get_program_counter(self) -> int:
         return self._program_counter
 
-    def get_executed_opcode(self):
+    def get_executed_opcode(self) -> int:
         return self._last_executed_opcode
 
-    def set_trap(self, value):
+    def set_trap(self, value) -> None:
         self._op_code_trapped = value
 
     def get_graphics_context(self):
@@ -530,26 +530,26 @@ class stack_entry:
     def get_data_stack_context(self):
         return self.executable.data_stack
 
-    def read_qcode_byte(self):
+    def read_qcode_byte(self) -> int:
         val = self.procedure["qcode"][self._program_counter]
         self._program_counter += 1
         return int(val)
 
-    def read_qcode_int16(self):
+    def read_qcode_int16(self) -> int:
         val = self._struct_unpacker_int16.unpack_from(
             self.procedure["qcode"], self._program_counter
         )[0]
         self._program_counter += 2
         return val
 
-    def read_qcode_uint16(self):
+    def read_qcode_uint16(self) -> int:
         val = self._struct_unpacker_uint16.unpack_from(
             self.procedure["qcode"], self._program_counter
         )[0]
         self._program_counter += 2
         return val
 
-    def execute_instruction(self):
+    def execute_instruction(self) -> bool:
         if self._program_counter >= self.procedure["qcode_len"]:
             # Finished execution of the procedure by hitting the end of the QCode
             _logger.info("Procedure Execution Complete")
@@ -676,9 +676,10 @@ class stack_entry:
                 opcode_endtime = time.time()
                 opcode_duration = opcode_endtime - opcode_starttime
 
-                self.executable.profiler_debugger.store_timing(
-                    opcode_duration, self._last_executed_opcode, opcode_hint
-                )
+                if self.executable.profiler_debugger:
+                    self.executable.profiler_debugger.store_timing(
+                        opcode_duration, self._last_executed_opcode, opcode_hint
+                    )
             except Exception as e:
                 if self._op_code_trapped:
                     # _logger.warning(f" - Error Occured and Trapped: {e}")

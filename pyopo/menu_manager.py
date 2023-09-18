@@ -35,12 +35,12 @@ class Menu:
 
         self.menu_items = []
 
-    def MENU(self, mcard_index, item_index):
+    def MENU(self, mcard_index: int, item_index: int) -> None:
         self.selected_item = [mcard_index, item_index]
 
         self.show = True
 
-    def mCARD(self, title, entries):
+    def mCARD(self, title: str, entries):
         self.menu_items.append((title, entries))
 
     def handle_MENU(self):
@@ -50,7 +50,7 @@ class Menu:
 
         return self.menu_items[m][1][i][1]
 
-    def handle_keypress(self, evt_id):
+    def handle_keypress(self, evt_id: int) -> None:
         print(f"Handling Dialog Keypress: {evt_id}")
 
         if self.selected_item != 0:  # Would be 0 if there are no selectable items
@@ -90,7 +90,7 @@ class Menu:
             # Force re-render
             self.cached_surface_buffer = None
 
-    def composite(self, render_surface):
+    def composite(self, render_surface: pygame.Surface) -> pygame.Surface:
         if self.cached_surface_buffer:
             # If no updates have been required, return the pre-rendered surface
             render_surface.blit(

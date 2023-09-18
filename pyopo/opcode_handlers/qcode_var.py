@@ -55,16 +55,14 @@ def qcode_push_addr_array(procedure, data_stack: data_stack, stack: stack):
         # String Array
 
         # Determine string length from the procedure string section
-        string_length = -1
         for declared_string in procedure.procedure["string_declarations"]:
             if declared_string["data_stack_frame_offset"] == offset - 1:
-                string_length = declared_string["length"]
+                dsf_offset += (
+                    declared_string["length"] + 1
+                ) * array_index  # QStrs have length byte too
                 break
-
-        if string_length == -1:
+        else:
             raise ("Unable to determine string length")
-
-        dsf_offset += (string_length + 1) * array_index  # QStrs have length byte too
 
     # print(f" - Type: {array_type} at DSF Offset: {dsf_offset} Array Offset: {array_index}")
 
@@ -160,16 +158,14 @@ def qcode_push_var_array(procedure, data_stack: data_stack, stack: stack):
     elif array_type == 3:
         # String Array
 
-        string_length = -1
         for declared_string in procedure.procedure["string_declarations"]:
             if declared_string["data_stack_frame_offset"] == offset - 1:
-                string_length = declared_string["length"]
+                dsf_offset += (
+                    declared_string["length"] + 1
+                ) * array_index  # QStrs have length byte too
                 break
-
-        if string_length == -1:
+        else:
             raise ("Unable to determine string length")
-
-        dsf_offset += (string_length + 1) * array_index  # QStrs have length byte too
 
     value = data_stack.read(array_type, dsf_offset)
     # print(f" - Value: {value} of Type: {array_type} at DSF Offset: {dsf_offset} Array Offset: {array_index}")
@@ -557,19 +553,17 @@ def qcode_push_ee_array_addr(procedure, data_stack: data_stack, stack: stack):
     elif array_type == 3:
         # String Array
 
-        string_length = -1
         for declared_string in ref_proc.procedure["string_declarations"]:
             if (
                 declared_string["data_stack_frame_offset"]
                 == dsf_offset - ref_proc.data_stack_frame_offset - 1
             ):
-                string_length = declared_string["length"]
+                dsf_offset += (
+                    declared_string["length"] + 1
+                ) * array_index  # QStrs have length byte too
                 break
-
-        if string_length == -1:
+        else:
             raise ("Unable to determine string length")
-
-        dsf_offset += (string_length + 1) * array_index  # QStrs have length byte too
 
     _logger.debug(
         f" - Storing DSF Addr {dsf_offset} of EE ref {ee_ref} ({array_index})"
@@ -689,19 +683,17 @@ def qcode_push_ee_array_val(procedure, data_stack: data_stack, stack: stack):
     elif array_type == 3:
         # String Array
 
-        string_length = -1
         for declared_string in ref_proc.procedure["string_declarations"]:
             if (
                 declared_string["data_stack_frame_offset"]
                 == dsf_offset - ref_proc.data_stack_frame_offset - 1
             ):
-                string_length = declared_string["length"]
+                dsf_offset += (
+                    declared_string["length"] + 1
+                ) * array_index  # QStrs have length byte too
                 break
-
-        if string_length == -1:
+        else:
             raise ("Unable to determine string length")
-
-        dsf_offset += (string_length + 1) * array_index  # QStrs have length byte too
 
     ee_val = data_stack.read(array_type, dsf_offset)
 

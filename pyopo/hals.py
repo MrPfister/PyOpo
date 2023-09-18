@@ -28,14 +28,14 @@ class hal_tim(hal):
 
     def __init__(self, data_stack):
         super().__init__(data_stack)
-        self._timers = []
+        self._timers = {}
 
     def get_identifier(self) -> str:
         return "TIM:"
 
-    def process_io(self):
+    def process_io(self) -> None:
         timers_to_remove = []
-        for timer in self._timers:
+        for timer in self._timers.values():
             if timer["end_datetime"] > datetime.datetime.now():
                 # Timer has now completed
                 self._data_stack.write(0, timer["expire"], timer["var_dsf_addr"])
@@ -54,39 +54,36 @@ class hal_tim(hal):
                     f"Storing Timer value: {current_val} to DSF Offset {timer['var_dsf_addrt']}"
                 )
 
-    def iowaitstat(self, status_handle):
-        for timer in self._timers:
-            if timer["var_dsf_addr"] == status_handle:
-                if timer["signal"]:
-                    # There has been a signal
-                    print("Clearing IO Signal")
-                    timer["signal"] = None
-                    return
-                else:
-                    # Await timer completion
-                    print("Awaiting timer completion...")
-                    input()
-                    pass
+    def iowaitstat(self, status_handle: int) -> None:
+        if status_handle not in self._timers:
+            raise ("Handle not found")
 
-    def add_timer(self, dsf_addr: int, expire: int):
+        timer = self._timer[status_handle]
+
+        if timer["signal"]:
+            # There has been a signal
+            print("Clearing IO Signal")
+            timer["signal"] = None
+            return
+        else:
+            # Await timer completion
+            print("Awaiting timer completion...")
+            input()
+            pass
+
+    def add_timer(self, dsf_addr: int, expire: int) -> None:
         delta_seconds = expire / 10
         print(f"Timer request for {delta_seconds} seconds")
 
-        self._timers.append(
-            {
-                "var_dsf_addr": dsf_addr,
-                "value": 0,
-                "expire": expire,
-                "start_datetime": datetime.datetime.now(),
-                "end_datetime": datetime.datetime.now()
-                + datetime.timedelta(seconds=delta_seconds),
-                "signal": -46,  # Start off with initial signal
-            }
-        )
+        self._timers[dsf_addr] = {
+            "var_dsf_addr": dsf_addr,
+            "value": 0,
+            "expire": expire,
+            "start_datetime": datetime.datetime.now(),
+            "end_datetime": datetime.datetime.now()
+            + datetime.timedelta(seconds=delta_seconds),
+            "signal": -46,  # Start off with initial signal
+        }
 
-    def has_handle(self, status_handle) -> bool:
-        for timer in self._timers:
-            if timer["var_dsf_addr"] == status_handle:
-                return True
-
-        return False
+    def has_handle(self, status_handle: int) -> bool:
+        return status_handle in self._timers

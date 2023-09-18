@@ -10,8 +10,7 @@ _logger = logging.getLogger()
 
 
 def qcode_pokeb(procedure, data_stack: data_stack, stack: stack):
-    val = stack.pop()
-    addr = stack.pop()
+    addr, val = stack.pop_2()
 
     _logger.debug(f"0x9C - POKEB {addr}, {val}")
 
@@ -22,8 +21,8 @@ def qcode_pokeb(procedure, data_stack: data_stack, stack: stack):
 def qcode_poke(procedure, data_stack: data_stack, stack: stack):
     op_code = procedure.get_executed_opcode()
     opcode_type = op_code - 0x98
-    val = stack.pop()
-    addr = stack.pop()
+
+    addr, val = stack.pop_2()
 
     _logger.debug(f"{hex(op_code)} - POKE {addr}, {val}")
 

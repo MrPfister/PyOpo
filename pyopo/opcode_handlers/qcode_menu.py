@@ -12,14 +12,14 @@ _logger = logging.getLogger()
 
 
 def qcode_minit(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"0xEA - mINIT")
+    _logger.debug("0xEA - mINIT")
 
     # Initialise new Menu
     procedure.executable.menu_manager = menu_manager.Menu()
 
 
 def qcode_mcard(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"0xEB - mCARD")
+    _logger.debug("0xEB - mCARD")
 
     arg_count = procedure.read_qcode_byte()
 
@@ -42,7 +42,7 @@ def qcode_mcard(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_menu_var(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"0x57 0x3A - MENU pop%")
+    _logger.debug("0x57 0x3A - MENU pop%")
 
     dsf_offset = stack.pop()
     value = data_stack.read(0, dsf_offset)
@@ -59,6 +59,6 @@ def qcode_menu_var(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_menu(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"0x57 0x36 - MENU")
+    _logger.debug("0x57 0x36 - MENU")
 
     procedure.executable.menu_manager.MENU(0, 0)

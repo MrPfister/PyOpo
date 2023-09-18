@@ -4,7 +4,7 @@ import math
 import logging
 import logging.config
 from pyopo.opl_exceptions import *
-from typing import Optional
+from typing import Optional, List, Tuple
 
 import pygame
 from pygame.locals import *
@@ -75,7 +75,7 @@ class DrawableSprite:
         self.bitmap_sets = []
 
     @staticmethod
-    def create_sprite():
+    def create_sprite() -> int:
         sprite_id = len(DrawableSprite._sprites)
 
         # SIBO16 OPL only supports a single sprite
@@ -88,7 +88,7 @@ class DrawableSprite:
         return sprite_id
 
     @staticmethod
-    def append_sprite(tenths, spritelist, dx, dy):
+    def append_sprite(tenths: int, spritelist: List[str], dx: int, dy: int) -> None:
         if not DrawableSprite._sprites:
             raise ("No Sprite defined")
 
@@ -248,27 +248,27 @@ class Window:
         i%(32) reserved
         """
 
-    def gAT(self, x: int, y: int):
+    def gAT(self, x: int, y: int) -> None:
         self.gATx = x
         self.gATy = y
 
-    def gMOVE(self, x: int, y: int):
+    def gMOVE(self, x: int, y: int) -> None:
         self.gATx += x
         self.gATy += y
 
-    def gCLS(self):
+    def gCLS(self) -> None:
         if self.gGREY_mode != 1:
             self.black_plane_surface.fill((255, 255, 255, 255))
 
         if self.gGREY_mode >= 1:
             self.grey_plane_surface.fill((255, 255, 255, 255))
 
-    def gIDENTITY(self):
+    def gIDENTITY(self) -> int:
         return self.ID
 
     def gSAVEBIT(
         self, name: str, width: Optional[int] = None, height: Optional[int] = None
-    ):
+    ) -> None:
         if "." not in name:
             # If an extension is not given, .PIC is added automatically
             name += ".PIC"
@@ -346,14 +346,14 @@ class Window:
 
         f.close()
 
-    def gLINETO(self, x: int, y: int):
+    def gLINETO(self, x: int, y: int) -> None:
         self.draw_line((self.gATx, self.gATy), (x, y))
 
         # gLINETO moves the cursor to the end point
         self.gATx = x
         self.gATy = y
 
-    def gPOLY(self, x: int, y: int, ops):
+    def gPOLY(self, x: int, y: int, ops: List[Tuple[int, int]]) -> None:
         cur_x = x
         cur_y = y
 
@@ -372,14 +372,14 @@ class Window:
                 cur_x += int(dx / 2)
                 cur_y += dy
 
-    def gLINEBY(self, dx, dy):
+    def gLINEBY(self, dx: int, dy: int) -> None:
         self.draw_line((self.gATx, self.gATy), (self.gATx + dx, self.gATy + dy))
 
         # gLINEBY moves the cursor by the delta
         self.gATx += dx
         self.gATy += dy
 
-    def draw_line(self, start, end):
+    def draw_line(self, start: Tuple[int, int], end: Tuple[int, int]) -> None:
         # Helper method to handle line drawing
 
         s_x, s_y = start
@@ -453,25 +453,25 @@ class Window:
         self.update_required = True
         return self.current_gFONT.size(text)[0]
 
-    def gWIDTH(self):
+    def gWIDTH(self) -> int:
         return self.width
 
-    def gHEIGHT(self):
+    def gHEIGHT(self) -> int:
         return self.height
 
-    def gGMODE(self, mode):
+    def gGMODE(self, mode: int) -> None:
         self.gGMODE_mode = mode
         _logger.debug(f"gGMODE = {mode}")
 
-    def gTMODE(self, mode):
+    def gTMODE(self, mode: int) -> None:
         self.gTMODE_mode = mode
         _logger.debug(f"gTMODE = {mode}")
 
-    def gVISIBLE(self, mode):
+    def gVISIBLE(self, mode: int) -> None:
         self.visible = mode
         self.update_required = True
 
-    def gSETWIN(self, x, y, width, height):
+    def gSETWIN(self, x: int, y: int, width: int, height: int) -> None:
         self.gPOSx = x
         self.gPOSy = y
 
@@ -481,7 +481,9 @@ class Window:
 
         self.update_required = True
 
-    def gSCROLL(self, dx, dy, xpos, ypos, width, height):
+    def gSCROLL(
+        self, dx: int, dy: int, xpos: int, ypos: int, width: int, height: int
+    ) -> None:
         if not width:
             width = self.width
             height = self.height
@@ -510,7 +512,9 @@ class Window:
 
         self.update_required = True
 
-    def gBORDER(self, flags, width=None, height=None):
+    def gBORDER(
+        self, flags, width: int | None = None, height: int | None = None
+    ) -> None:
         border_x = self.gATx
         border_y = self.gATy
 
@@ -557,7 +561,9 @@ class Window:
                 thickness,
             )
 
-    def gXBORDER(self, type, flags, width=None, height=None):
+    def gXBORDER(
+        self, type: int, flags: int, width: int | None = None, height: int | None = None
+    ) -> None:
         # Just draw a simple border (gBORDER)
         self.gBORDER(flags, width, height)
 
@@ -604,7 +610,9 @@ class Window:
 
         self.gATx += font_surface.get_width()
 
-    def gPRINTB(self, text, width, align, top, bottom, margin):
+    def gPRINTB(
+        self, text: str, width: int, align: int, top: int, bottom: int, margin: int
+    ) -> None:
         sanitised = str(text).replace("\0", "")
         if len(sanitised) == 0:
             # No text to render, skip
@@ -646,7 +654,7 @@ class Window:
 
         self.gATx += width
 
-    def gBUTTON(self, text, ty, width, height, st):
+    def gBUTTON(self, text: str, ty, width: int, height: int, st) -> None:
         self.black_plane_surface.fill(
             (255, 255, 255, 255), (self.gATx, self.gATy, width, height)
         )
@@ -712,17 +720,17 @@ class Window:
                     (self.gATx + width / 2 - max_text_width / 2, self.gATy + y_offset),
                 )
 
-    def gFONT(self, font_id):
+    def gFONT(self, font_id: int) -> None:
         if font_id not in self.gFONTS:
             raise (KErrOutOfRange)
 
         self.current_gFONT = self.gFONTS[font_id]["Font"]
 
-    def gGREY(self, mode):
+    def gGREY(self, mode: int) -> None:
         self.gGREY_mode = mode
         self.update_required = True
 
-    def gINVERT(self, width, height):
+    def gINVERT(self, width: int, height: int) -> None:
         self.gFILL(width, height, 2)
 
         # gINVERT inverts the rectangle area apart from the 4 corner pixels
@@ -732,19 +740,19 @@ class Window:
         self.invert_pixel(self.gATx, self.gATy + height)
         self.invert_pixel(self.gATx + width, self.gATy + height)
 
-    def gX(self):
+    def gX(self) -> int:
         return self.gATx
 
-    def gY(self):
+    def gY(self) -> int:
         return self.gATy
 
-    def gORIGINX(self):
+    def gORIGINX(self) -> int:
         return self.gPOSx
 
-    def gORIGINY(self):
+    def gORIGINY(self) -> int:
         return self.gPOSy
 
-    def invert_pixel(self, x, y):
+    def invert_pixel(self, x: int, y: int) -> None:
         if self.gATy + y >= self.black_plane_surface.get_height() or self.gATy + y < 0:
             return
 
@@ -773,7 +781,7 @@ class Window:
 
             self.black_plane_surface.set_at((self.gATx + x, self.gATy + y), col)
 
-    def gFILL(self, width, height, mode):
+    def gFILL(self, width: int, height: int, mode: int) -> None:
         # 0 set
         # 1 cleared
         # 2 inverted
@@ -838,7 +846,7 @@ class Window:
                     col, (self.gATx, self.gATy, width, height)
                 )
 
-    def gBOX(self, width, height):
+    def gBOX(self, width: int, height: int) -> None:
         if self.gGREY_mode > 0:
             # Grey plane
             pygame.draw.rect(
@@ -857,7 +865,7 @@ class Window:
                 1,
             )
 
-    def gINFO(self):
+    def gINFO(self) -> List[int]:
         ginfo = [0] * 32
 
         """
@@ -924,11 +932,11 @@ class WindowManager:
             executable.header.source_filename.split("\\")[-1].replace("\0", "")
         )
 
-        self.windows = []
+        self.windows: List[Window] = []
         self.gupdate_enabled = True
 
         self.graphics_cursor = 0
-        self._window_cursor = None
+        self._window_cursor: Window = None
 
         self.defaultwin_mode = 1
 
@@ -950,7 +958,15 @@ class WindowManager:
         self.last_render_time = datetime.datetime.now()
 
     def gCREATE(
-        self, x, y, width, height, visible, flags, read_only=False, drawable=False
+        self,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        visible,
+        flags,
+        read_only=False,
+        drawable=False,
     ) -> int:
         lowest_free = 1
 
@@ -985,7 +1001,7 @@ class WindowManager:
 
         return lowest_free
 
-    def gLOADBIT(self, name: str, write: int, index: int):
+    def gLOADBIT(self, name: str, write: int, index: int) -> int:
         # write = 0: Read Only access, write = 1: Write access
 
         pic_binary = None
@@ -994,7 +1010,7 @@ class WindowManager:
 
         return self.gLOADBIT_binary(pic_binary, write, index)
 
-    def gLOADBIT_binary(self, pic_binary, write: int, index: int):
+    def gLOADBIT_binary(self, pic_binary: bytes, write: int, index: int) -> int:
         bitmap_surface = WindowManager.create_surface_from_bitmap_binary(
             pic_binary, index
         )
@@ -1075,14 +1091,14 @@ class WindowManager:
 
         return bitmap_surface
 
-    def GIPRINT(self, prompt, c):
+    def GIPRINT(self, prompt: str, c: int) -> None:
         self.giprint = {
             "start_ts": datetime.datetime.now(),
             "prompt": prompt,
             "location": c,
         }
 
-    def gCLOSE(self, id):
+    def gCLOSE(self, id: int) -> None:
         if id == 1:
             raise ("Can not close default window")
 
@@ -1102,7 +1118,7 @@ class WindowManager:
 
         self.windows.pop(index_to_pop)
 
-    def init_sdl(self, width, height):
+    def init_sdl(self, width: int, height: int) -> None:
         pygame.init()
 
         debugger_height = 0
@@ -1325,7 +1341,7 @@ class WindowManager:
 
         pygame.display.flip()
 
-    def gUSE(self, id):
+    def gUSE(self, id: int) -> None:
         for i in range(len(self.windows)):
             if self.windows[i].ID == id:
                 self.graphics_cursor = i
@@ -1334,12 +1350,12 @@ class WindowManager:
 
         self.update_required = True
 
-    def gRANK(self):
+    def gRANK(self) -> int:
         self.update_required = True
 
         return len(self.windows) - self.graphics_cursor
 
-    def gORDER(self, id, index):
+    def gORDER(self, id: int, index: int) -> None:
         # Store the ID which is the gUSE value
         gUSE_ID = self.windows[self.graphics_cursor].ID
 
@@ -1370,7 +1386,7 @@ class WindowManager:
         # Make sure the Current Drawable is still pointing to the correct ID if its been moved.
         self.gUSE(gUSE_ID)
 
-    def gCOPY(self, id, x, y, w, h, mode):
+    def gCOPY(self, id: int, x: int, y: int, w: int, h: int, mode: int) -> None:
         for i in range(len(self.windows)):
             if self.windows[i].ID == id:
                 from_window = self.windows[i]
@@ -1417,7 +1433,17 @@ class WindowManager:
 
         self.update_required = True
 
-    def set_at_mode(self, src, dest, src_x, src_y, dest_x, dest_y, mode, grey: bool):
+    def set_at_mode(
+        self,
+        src,
+        dest,
+        src_x: int,
+        src_y: int,
+        dest_x: int,
+        dest_y: int,
+        mode: int,
+        grey: bool,
+    ) -> None:
         # Validate coords are in bounds
         if src_x < 0 or src_x >= src.get_width():
             return
@@ -1455,7 +1481,7 @@ class WindowManager:
 
                 dest.set_at((dest_x, dest_y), dst_pixel)
 
-    def gPATT(self, id, w, h, mode):
+    def gPATT(self, id: int, w: int, h: int, mode: int) -> None:
         for i in range(len(self.windows)):
             if self.windows[i].ID == id:
                 from_window = self.windows[i]
@@ -1491,17 +1517,17 @@ class WindowManager:
 
         self.update_required = True
 
-    def gUPDATE(self, arg):
+    def gUPDATE(self, arg: int) -> None:
         if arg == 255:
             # print(f' - Forcing screen composite')
 
             self.composite(self.executable, True)
         else:
             self.gupdate_enabled = True if arg == 1 else False
-            print(f" - gUPDATE INPUT: {arg}")
-            print(f" - gUPDATE STATUS: {self.gupdate_enabled}")
+            _logger.debug(f" - gUPDATE INPUT: {arg}")
+            _logger.debug(f" - gUPDATE STATUS: {self.gupdate_enabled}")
 
-    def DEFAULTWIN(self, mode):
+    def DEFAULTWIN(self, mode: int) -> None:
         self.defaultwin_mode = mode
         self.update_required = True
 
@@ -1512,11 +1538,11 @@ class WindowManager:
         self.update_required = True
         return pygame.display.get_caption()[0]
 
-    def set_window_name(self, name) -> None:
+    def set_window_name(self, name: str) -> None:
         self.update_required = True
         pygame.display.set_caption(name)
 
-    def gPEEKLINE(self, id, x, y, ln):
+    def gPEEKLINE(self, id: int, x: int, y: int, ln: int) -> str:
         surface_to_peek = self.screen_buffer
         if id != 0:
             use_grey = False
@@ -1547,10 +1573,10 @@ class WindowManager:
 
         return result
 
-    def gSetOpenAddress(self, bx, cx, dx):
+    def gSetOpenAddress(self, bx: int, cx: int, dx: int) -> None:
         self.open_address = [bx, cx, dx]
 
-    def DRAWSPRITE(self, dx: int, dy: int):
+    def DRAWSPRITE(self, dx: int, dy: int) -> None:
         if len(DrawableSprite._sprites) == 0:
             # No sprites have been loaded
             raise ("No sprites have been loaded into memory")
@@ -1564,7 +1590,7 @@ class WindowManager:
         DrawableSprite.draw_sprite = True
         self.update_required = True
 
-    def POSSSPRITE(self, dx, dy):
+    def POSSSPRITE(self, dx: int, dy: int) -> None:
         sprite = DrawableSprite._sprites[DrawableSprite._current_sprite]
         sprite.xpos = dx
         sprite.ypos = dy
