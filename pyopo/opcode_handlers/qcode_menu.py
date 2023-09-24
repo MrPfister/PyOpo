@@ -24,7 +24,7 @@ def qcode_mcard(procedure, data_stack: data_stack, stack: stack):
     arg_count = procedure.read_qcode_byte()
 
     mcard_items = []
-    for i in range(arg_count):
+    for _ in range(arg_count):
         menu_key_shortcut = stack.pop()
         menu_title = stack.pop()
 

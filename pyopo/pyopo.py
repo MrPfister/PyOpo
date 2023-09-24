@@ -35,6 +35,8 @@ _logger = logging.getLogger()
 
 PROFILE_DUMP_TIMESPAN = 120
 
+UI_FPS = 15
+
 KEY_TRANSLATION = {
     pygame.K_LALT: 290,  # Menu
     pygame.K_RALT: 291,  # Help
@@ -100,6 +102,10 @@ class executable:
 
         # Runtime information
         self.proc_stack = []
+
+        # Cached ref to current executing procedure
+        self._current_proc: stack_entry = None
+
         self.stack = stack()
         self.data_stack = data_stack(
             DATA_STACK_FRAME_SIZE, debugger=self.memory_debugger
@@ -168,18 +174,20 @@ class executable:
         return self.file
 
     def loadm(self, module: Self) -> None:
+        """Runtime support for the LOADM OPL Command"""
         self.modules.append(module)
 
         self.procedure_table.extend(module.procedure_table)
 
     def unloadm(self, module: Self) -> None:
+        """Runtime support for the UNLOADM OPL Command"""
         raise NotImplementedError()
 
     def get_proc_name(self) -> str:
         if len(self.proc_stack) == 0:
             return ""
 
-        return self.proc_stack[-1].procedure["name"]
+        return self._current_proc.procedure["name"]
 
     def get_top_proc_instance_for_name(self, proc_name: str):
         for proc in reversed(self.proc_stack):
@@ -193,10 +201,12 @@ class executable:
 
         # Add first procedure to the stack
         self.proc_stack.append(stack_entry(proc, self))
+        self._current_proc = self.proc_stack[-1]  # Cache ref
 
         profiling_starttime = time.time()
 
         while True:
+            # Process the PyGame inputs in the event loop
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     _logger.info("User has triggered App exit")
@@ -316,9 +326,9 @@ class executable:
             if awaiting_action:
                 self.window_manager.composite(self)
 
-                # _logger.critical(" - AWAITING KEYPRESS")
+                _logger.debug(" - AWAITING KEYPRESS")
 
-                time.sleep(1.0 / 30.0)  # Simulate 30FPS
+                time.sleep(1.0 / UI_FPS)  # Simulate 30FPS
                 continue
 
             # Handle any awaiting IO actions
@@ -326,29 +336,29 @@ class executable:
                 self.io_hals[hal_ref].process_io()
 
             # Execute instruction from the topmost procedure
-            check_flags = self.proc_stack[-1].execute_instruction()
+            check_flags = self._current_proc.execute_instruction()
 
             # Composite the applications graphics
             last_render_delta = (
                 datetime.datetime.now() - self.window_manager.last_render_time
             )
-            if last_render_delta.microseconds > 1000000 / 15:
+            if last_render_delta.microseconds > 1000000 / UI_FPS:
                 self.window_manager.composite(self)
 
             if check_flags:
                 # The execution resulted in flags being set
 
-                if self.proc_stack[-1].flag_stop:
+                if self._current_proc.flag_stop:
                     _logger.info(" - User has requested application STOP")
                     break
-                elif self.proc_stack[-1].flag_callproc:
+                elif self._current_proc.flag_callproc:
                     # The Callee Procedure has flagged it is calling another procedure
 
-                    # Check to see if there is a direct name match
+                    # Via LOADM there may be more than 1 instance of a procedure with the same name.
                     proc_call = list(
                         filter(
                             lambda p: p["name"].upper()
-                            == self.proc_stack[-1].flag_callproc.upper(),
+                            == self._current_proc.flag_callproc.upper(),
                             self.procedure_table,
                         )
                     )
@@ -358,17 +368,24 @@ class executable:
                         proc_names = list(
                             map(lambda p: p["name"].upper(), self.procedure_table)
                         )
+                        _logger.warn("Unable to determine CALLEE PROC")
+                        _logger.warn(proc_names)
                         raise ("Procedure not found")
+                    elif len(proc_call) > 0:
+                        _logger.warning(
+                            f"More than one procedure entry exists for {self._current_proc.flag_callproc.upper()}"
+                        )
 
                     # Reset the procedure calling flag
-                    self.proc_stack[-1].flag_callproc = None
+                    self._current_proc.flag_callproc = None
 
                     # Add the called procedure to the stack
                     self.proc_stack.append(stack_entry(proc_call[0], self))
+                    self._current_proc = self.proc_stack[-1]
 
                     # OPO adds 2 stack entries per param when calling, verify type codes and remove them
-                    for i in range(self.proc_stack[-1].procedure["parameter_count"]):
-                        expected_param_typecode = self.proc_stack[-1].procedure[
+                    for i in range(self._current_proc.procedure["parameter_count"]):
+                        expected_param_typecode = self._current_proc.procedure[
                             "parameters"
                         ][i]["type"]
                         received_param_typecode = self.stack.pop()
@@ -377,16 +394,16 @@ class executable:
                             # _logger.warning(f"Mismatch {expected_param_typecode} vs {received_param_typecode}")
                             raise ("Invalid PROC call, type mismatch")
 
-                        self.proc_stack[-1].procedure["parameters"][i][
+                        self._current_proc.procedure["parameters"][i][
                             "value"
                         ] = self.stack.pop()
 
-                elif self.proc_stack[-1].flag_return:
+                elif self._current_proc.flag_return:
                     # The procedure is being returned, or has completed execution
 
                     # Free procedure memory
                     self.data_stack.free_frame(
-                        self.proc_stack[-1].data_stack_frame_offset
+                        self._current_proc.data_stack_frame_offset
                     )
 
                     # Remove the procedure from the stack, carry on previous procedure
@@ -396,8 +413,10 @@ class executable:
                         _logger.info("Application has completed execution")
                         break
 
+                    self._current_proc = self.proc_stack[-1]  # Cache new ref
+
                     _logger.info(
-                        f" - Returning execution to PROC {self.proc_stack[-1].procedure['name']}"
+                        f" - Returning execution to PROC {self._current_proc.procedure['name']}"
                     )
                 else:
                     # Other Flag occured
@@ -406,7 +425,9 @@ class executable:
             if time.time() - profiling_starttime > PROFILE_DUMP_TIMESPAN:
                 break
 
-        self.profiler_debugger.dump_timings()
+        if self.profiler_debugger:
+            # Dump out debug information if the profiler is attached
+            self.profiler_debugger.dump_timings()
 
     def open_dbf(self, filename: str, d: int, vars, readonly):
         self.databases.append(
@@ -466,7 +487,14 @@ class stack_entry:
         self.executable = executable
 
         self.procedure = procedure_table_entry
+
+        # The program counter, the iterator of the current qcode offset
         self._program_counter = 0
+
+        # The bytecode for the procedure entry
+        self._qcode: bytes = self.procedure["qcode"]
+        self._qcode_len = len(self._qcode)
+
         self._last_executed_opcode = None
 
         # DIR$ returns an iterator, which is stored to the procedure
@@ -496,8 +524,8 @@ class stack_entry:
         # Populate Data Stack Frame with array/string information
         for str_dec in self.procedure["string_declarations"]:
             self.executable.data_stack.memory[
-                self.data_stack_frame_offset + str_dec["data_stack_frame_offset"]
-            ] = str_dec["length"]
+                self.data_stack_frame_offset + str_dec
+            ] = self.procedure["string_declarations"][str_dec]["length"]
 
         for arr_dec in self.procedure["array_declarations"]:
             self.executable.data_stack.write(
@@ -531,35 +559,35 @@ class stack_entry:
         return self.executable.data_stack
 
     def read_qcode_byte(self) -> int:
-        val = self.procedure["qcode"][self._program_counter]
+        """Read the next byte in the qcode sequence and iterate the program counter"""
+        val = self._qcode[self._program_counter]
         self._program_counter += 1
         return int(val)
 
     def read_qcode_int16(self) -> int:
+        """Read the next signed 16bit integer from the qcode sequence and iterate the program counter accordingly"""
         val = self._struct_unpacker_int16.unpack_from(
-            self.procedure["qcode"], self._program_counter
+            self._qcode, self._program_counter
         )[0]
         self._program_counter += 2
         return val
 
     def read_qcode_uint16(self) -> int:
+        """Read the next unsigned 16bit integer from the qcode sequence and iterate the program counter accordingly"""
         val = self._struct_unpacker_uint16.unpack_from(
-            self.procedure["qcode"], self._program_counter
+            self._qcode, self._program_counter
         )[0]
         self._program_counter += 2
         return val
 
     def execute_instruction(self) -> bool:
-        if self._program_counter >= self.procedure["qcode_len"]:
+        if self._program_counter >= self._qcode_len:
             # Finished execution of the procedure by hitting the end of the QCode
             _logger.info("Procedure Execution Complete")
             self.flag_return = True
             return True
 
-        op_code = int(self.procedure["qcode"][self._program_counter])
-        # print(f"Opcode: {hex(op_code)} - {self.program_counter} / {self.procedure['qcode_len']}")
-
-        self._program_counter += 1
+        op_code = self.read_qcode_byte()
         opcode_hint = None
 
         op_code_handler = None
@@ -567,18 +595,17 @@ class stack_entry:
         if op_code == 0x53:
             # Call a procedure
             ee = self.read_qcode_uint16()
-            _logger.info(f" - PROCEDURE CALL! EE Ref {ee}")
 
-            matches = list(
-                filter(lambda p: p["ee"] == ee, self.procedure["called_procedures"])
-            )
-            if len(matches) == 0:
-                # _logger.warning('Failed to determine called procedure')
+            cp_match = self.procedure["cached_cp"].get(ee, None)
+            if not cp_match:
+                _logger.warning("Failed to determine called procedure")
                 self.flag_error = True
                 return True
 
-            self.flag_callproc = matches[0]["name"]
-            _logger.info(f" - Calling PROC {self.flag_callproc}:")
+            self.flag_callproc = cp_match["name"]
+            _logger.info(
+                f" - PROCEDURE CALL! EE Ref {ee} - Calling PROC {self.flag_callproc}:"
+            )
 
             return True
         elif op_code == 0x6B:
@@ -587,7 +614,7 @@ class stack_entry:
             return_type = self.read_qcode_byte()
             _logger.info(f"Return Type: {return_type}")
 
-            for i in range(args):
+            for _ in range(args):
                 # Retrieve the arguments
                 type_code = self.executable.stack.pop()
                 arg_name = self.executable.stack.pop()
@@ -610,11 +637,10 @@ class stack_entry:
         elif op_code == 0x57:
             # Opcode subset with 0x57 hint
             opcode_hint = 0x57
-            op_code = int(self.procedure["qcode"][self._program_counter])
+            op_code = self.read_qcode_byte()
             _logger.debug(
-                f"Opcode: 0x57 {hex(op_code)} - {self._program_counter} / {self.procedure['qcode_len']}"
+                f"Opcode: 0x57 {hex(op_code)} - {self._program_counter-1} / {self.procedure['qcode_len']}"
             )
-            self._program_counter += 1
 
             op_code_handler = opcode_0x57_handler.get(op_code)
         elif op_code in [0x74, 0x75, 0x76, 0x77]:
@@ -641,22 +667,20 @@ class stack_entry:
         elif op_code == 0xED:
             # Opcode subset with 0xED hint
             opcode_hint = 0xED
-            op_code = int(self.procedure["qcode"][self._program_counter])
+            op_code = self.read_qcode_byte()
             _logger.debug(
-                f"Opcode: 0xED {hex(op_code)} - {self._program_counter} / {self.procedure['qcode_len']} / {len(self.executable.stack.stack_frame)}"
+                f"Opcode: 0xED {hex(op_code)} - {self._program_counter-1} / {self.procedure['qcode_len']} / {len(self.executable.stack.stack_frame)}"
             )
-            self._program_counter += 1
 
             op_code_handler = opcode_0xED_handler.get(op_code)
 
         elif op_code == 0xFF:
             # Opcode subset with 0xFF hint
             opcode_hint = 0xFF
-            op_code = int(self.procedure["qcode"][self._program_counter])
+            op_code = self.read_qcode_byte()
             _logger.debug(
-                f"Opcode: 0xFF {hex(op_code)} - {self._program_counter} / {self.procedure['qcode_len']} / {len(self.executable.stack.stack_frame)}"
+                f"Opcode: 0xFF {hex(op_code)} - {self._program_counter-1} / {self.procedure['qcode_len']} / {len(self.executable.stack.stack_frame)}"
             )
-            self._program_counter += 1
 
             op_code_handler = opcode_0xFF_handler.get(op_code)
 

@@ -114,8 +114,6 @@ def qcode_gcreate_6(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_gborder(procedure, data_stack, stack) -> None:
-    _logger.debug(f"0xF4 - gBORDER")
-
     arg_count = procedure.read_qcode_byte()
 
     if arg_count == 3:
@@ -132,7 +130,7 @@ def qcode_gborder(procedure, data_stack, stack) -> None:
 
 
 def qcode_gat(procedure, data_stack, stack) -> None:
-    _logger.debug(f"0xD2 - gAT pop%2, pop%1")
+    _logger.debug("0xD2 - gAT pop%2, pop%1")
 
     x, y = stack.pop_2()
     procedure.get_graphics_context().gAT(x, y)
@@ -171,11 +169,13 @@ def qcode_gpoly(procedure, data_stack, stack) -> None:
 
     _logger.debug(f"0xDE - gPOLY: {x}, {y}, Operations: {operations}")
 
-    ops = []
-    for i in range(operations):
-        dx = data_stack.read(0, dsf_offset + 6 + i * 4)
-        dy = data_stack.read(0, dsf_offset + 8 + i * 4)
-        ops.append((dx, dy))
+    ops = [
+        (
+            data_stack.read(0, dsf_offset + 6 + i * 4),  # dx
+            data_stack.read(0, dsf_offset + 8 + i * 4),  # dy
+        )
+        for i in range(operations)
+    ]
 
     procedure.get_graphics_context().gPOLY(x, y, ops)
 
@@ -223,24 +223,10 @@ def qcode_gprintb(procedure, data_stack, stack) -> None:
 
     arg_count = procedure.read_qcode_byte()
 
-    # Defaults when not specified
-    al = 2  # Default to Left Align
-    tp = 0
-    bt = 0
-    m = 0
-
-    if arg_count == 5:
-        m = stack.pop()
-
-    if arg_count >= 4:
-        bt = stack.pop()
-
-    if arg_count >= 3:
-        tp = stack.pop()
-
-    if arg_count >= 2:
-        al = stack.pop()
-
+    m = stack.pop() if arg_count == 5 else 0
+    bt = stack.pop() if arg_count >= 4 else 0
+    tp = stack.pop() if arg_count >= 3 else 0
+    al = stack.pop() if arg_count >= 2 else 2  # Default to Left Align
     w = stack.pop()
     t = stack.pop()
 
@@ -279,15 +265,12 @@ def qcode_gupdate(procedure, data_stack, stack) -> None:
     _logger.debug("0xE3 - gUPDATE")
 
     # Qn format 0,1,FF (Off, On, Omitted)
-    arg = procedure.read_qcode_byte()
-    procedure.get_window_manager().gUPDATE(arg)
+    procedure.get_window_manager().gUPDATE(procedure.read_qcode_byte())
 
 
 def qcode_defaultwin(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0xFF 0x01 - DEFAULTWIN")
-
-    mode = stack.pop()
-    procedure.get_window_manager().DEFAULTWIN(mode)
+    procedure.get_window_manager().DEFAULTWIN(stack.pop())
 
 
 def qcode_ggrey(procedure, data_stack: data_stack, stack: stack):
@@ -323,7 +306,7 @@ def qcode_gclock(procedure, data_stack: data_stack, stack: stack):
     arg = procedure.read_qcode_byte()
 
     if arg > 1:
-        for i in range(arg - 1):
+        for _ in range(arg - 1):
             stack.pop()
         _logger.debug(f" - gCLOCK arg count = {arg-1}")
     elif arg == 0:
@@ -340,9 +323,7 @@ def qcode_gclock(procedure, data_stack: data_stack, stack: stack):
 
 def qcode_gvisible(procedure, data_stack, stack) -> None:
     _logger.debug("0xC9 - gVISIBLE")
-
-    mode = procedure.read_qcode_byte()
-    procedure.get_graphics_context().gVISIBLE(mode)
+    procedure.get_graphics_context().gVISIBLE(procedure.read_qcode_byte())
 
 
 def qcode_gpeekline(procedure, data_stack, stack) -> None:
@@ -377,16 +358,8 @@ def qcode_gloadbit(procedure, data_stack: data_stack, stack: stack):
 
     args = procedure.read_qcode_byte()
 
-    # Defaults
-    index = 0
-    write = 1
-
-    if args == 3:
-        index = stack.pop()
-
-    if args >= 2:
-        write = stack.pop()
-
+    index = stack.pop() if args == 3 else 0
+    write = stack.pop() if args >= 2 else 1
     name = stack.pop()
 
     if not "." in name:

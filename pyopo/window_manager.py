@@ -323,6 +323,7 @@ class Window:
         bytestr = ""
         imgs_to_write = [self.black_plane_surface, self.grey_plane_surface]
 
+        byte_pack_struct = struct.Struct("<B")
         for surf in imgs_to_write:
             for y in range(img_height):
                 for x in range(bytepacked_width * 8):
@@ -341,7 +342,7 @@ class Window:
                     bytestr += str(pixel_val)
                     if len(bytestr) == 8:
                         # Complete byte, write out
-                        f.write(struct.pack("<B", int(bytestr, 2)))
+                        f.write(byte_pack_struct.pack(int(bytestr, 2)))
                         bytestr = ""
 
         f.close()
@@ -366,7 +367,6 @@ class Window:
                 cur_y += dy
             else:
                 # Evwn: Draw command
-
                 self.draw_line((cur_x, cur_y), (cur_x + int(dx / 2), cur_y + dy))
 
                 cur_x += int(dx / 2)
@@ -796,11 +796,9 @@ class Window:
                 ):
                     continue
 
-                for x in range(width):
-                    if (
-                        self.gATx + x >= self.black_plane_surface.get_width()
-                        or self.gATx + x < 0
-                    ):
+                max_width = min(width, self.black_plane_surface.get_width() - self.gATx)
+                for x in range(max_width):
+                    if self.gATx + x < 0:
                         continue
 
                     if self.gGREY_mode > 0:
@@ -1082,10 +1080,9 @@ class WindowManager:
                 bits = [int(i) for i in "{0:08b}".format(byte_pixels)]
 
                 for p in range(8):
-                    if w * 8 + 8 - p < width:
-                        if bits[p] == 1:
-                            # Set the pixel
-                            bitmap_surface.set_at((w * 8 + 8 - p, h), (0, 0, 0, 0))
+                    if w * 8 + 8 - p < width and bits[p] == 1:
+                        # Set the pixel
+                        bitmap_surface.set_at((w * 8 + 8 - p, h), (0, 0, 0, 0))
 
             bmp_d_off += byte_width
 
@@ -1108,10 +1105,9 @@ class WindowManager:
             self.gUSE(1)
             return
 
-        index_to_pop = None
-        for i in range(len(self.windows)):
-            if self.windows[i].ID == id:
-                index_to_pop = i
+        index_to_pop = next(
+            (i for i in range(len(self.windows)) if self.windows[i].ID == id), None
+        )
 
         if not index_to_pop:
             raise ("Index not found")

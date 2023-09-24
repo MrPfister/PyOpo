@@ -1,4 +1,5 @@
 from pyopo.filehandler_filesystem import *
+from typing import List
 
 import pygame
 from pygame.locals import *
@@ -84,7 +85,7 @@ class Dialog:
                 }
             )
 
-    def DIALOG(self):
+    def DIALOG(self) -> None:
         self.show = True
 
         if self.select_count == 0:
@@ -92,7 +93,7 @@ class Dialog:
         else:
             self.selected_item = 0
 
-    def dTEXT(self, p, body, text_align):
+    def dTEXT(self, p: str, body: str, text_align: int) -> None:
         use_bold = False
         draw_line = False
         selectable = False
@@ -126,7 +127,7 @@ class Dialog:
         if selectable:
             self.select_count += 1
 
-    def dEDIT(self, addr, value, prompt, max_len):
+    def dEDIT(self, addr: int, value: str, prompt: str, max_len: int) -> None:
         self.dialog_items.append(
             {
                 "type": "dEDIT",
@@ -141,7 +142,7 @@ class Dialog:
 
         self.select_count += 1
 
-    def dBUTTONS(self, buttons):
+    def dBUTTONS(self, buttons) -> None:
         self.dialog_items.append(
             {
                 "type": "dBUTTONS",
@@ -151,7 +152,7 @@ class Dialog:
             }
         )
 
-    def dLONG(self, addr, value, prompt, min, max):
+    def dLONG(self, addr: int, value: int, prompt: str, min: int, max: int) -> None:
         self.dialog_items.append(
             {
                 "type": "dLONG",
@@ -167,7 +168,9 @@ class Dialog:
 
         self.select_count += 1
 
-    def dFLOAT(self, addr, value, prompt, min, max):
+    def dFLOAT(
+        self, addr: int, value: float, prompt: str, min: float, max: float
+    ) -> None:
         self.dialog_items.append(
             {
                 "type": "dFLOAT",
@@ -183,7 +186,9 @@ class Dialog:
 
         self.select_count += 1
 
-    def dFILE(self, addr, value, file_list, prompt, flags):
+    def dFILE(
+        self, addr: int, value: str, file_list: str, prompt: str, flags: int
+    ) -> None:
         self.dialog_items.append(
             {
                 "type": "dFILE",
@@ -213,11 +218,11 @@ class Dialog:
 
         self.select_count += 1
 
-    def dPOSITION(self, x, y):
+    def dPOSITION(self, x: int, y: int) -> None:
         self.pos_x = x
         self.pos_y = y
 
-    def handle_DIALOG(self, data_stack):
+    def handle_DIALOG(self, data_stack) -> int:
         # Store results into the Data Stack Frame
         for item in self.dialog_items:
             if item["type"] == "dEDIT":
@@ -245,10 +250,12 @@ class Dialog:
 
             raise ("Unable to determine selected item")
 
-    def handle_keypress(self, evt_id):
+    def handle_keypress(self, evt_id: int):
         print(f"Handling Dialog Keypress: {evt_id}")
 
-        if self.selected_item is not None:  # Would be 0 if there are no selectable items
+        if (
+            self.selected_item is not None
+        ):  # Would be 0 if there are no selectable items
             if evt_id == 257:
                 print("Down Pressed")
                 # Down Arrow Key
@@ -334,7 +341,7 @@ class Dialog:
             # Force re-render
             self.dialog_surface = None
 
-    def get_button_keycodes(self):
+    def get_button_keycodes(self) -> List[int]:
         button_keycodes = []
         for item in self.dialog_items:
             if item["type"] == "dBUTTONS":

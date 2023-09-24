@@ -100,8 +100,6 @@ def qcode_cmp_div(procedure, data_stack: data_stack, stack: stack):
         # Int
         res = int(res)
 
-    # print(f" - {pop_2} / {pop_1} = {res}")
-
     stack.push(stack_type, res)
 
 
@@ -150,10 +148,7 @@ def qcode_pow(procedure, data_stack: data_stack, stack: stack):
     stack_type = procedure.get_executed_opcode() - 0x58
 
     pop_2, pop_1 = stack.pop_2()
-
     res = math.pow(pop_2, pop_1)
-
-    # print(f" - {pop_2} ^ {pop_1} = {res}")
 
     stack.push(stack_type, res)
 

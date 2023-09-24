@@ -55,16 +55,16 @@ def qcode_push_addr_array(procedure, data_stack: data_stack, stack: stack):
         # String Array
 
         # Determine string length from the procedure string section
-        for declared_string in procedure.procedure["string_declarations"]:
-            if declared_string["data_stack_frame_offset"] == offset - 1:
-                dsf_offset += (
-                    declared_string["length"] + 1
-                ) * array_index  # QStrs have length byte too
-                break
+        string_dec_entry = procedure.procedure["string_declarations"].get(
+            offset - 1, None
+        )
+
+        if string_dec_entry:
+            dsf_offset += (
+                string_dec_entry["length"] + 1
+            ) * array_index  # QStrs have length byte too
         else:
             raise ("Unable to determine string length")
-
-    # print(f" - Type: {array_type} at DSF Offset: {dsf_offset} Array Offset: {array_index}")
 
     stack.push(4, dsf_offset)
 
@@ -157,13 +157,14 @@ def qcode_push_var_array(procedure, data_stack: data_stack, stack: stack):
         dsf_offset += 8 * array_index
     elif array_type == 3:
         # String Array
+        string_dec_entry = procedure.procedure["string_declarations"].get(
+            offset - 1, None
+        )
 
-        for declared_string in procedure.procedure["string_declarations"]:
-            if declared_string["data_stack_frame_offset"] == offset - 1:
-                dsf_offset += (
-                    declared_string["length"] + 1
-                ) * array_index  # QStrs have length byte too
-                break
+        if string_dec_entry:
+            dsf_offset += (
+                string_dec_entry["length"] + 1
+            ) * array_index  # QStrs have length byte too
         else:
             raise ("Unable to determine string length")
 
@@ -552,16 +553,14 @@ def qcode_push_ee_array_addr(procedure, data_stack: data_stack, stack: stack):
         dsf_offset += 8 * array_index
     elif array_type == 3:
         # String Array
+        string_dec_entry = ref_proc.procedure["string_declarations"].get(
+            dsf_offset - ref_proc.data_stack_frame_offset - 1, None
+        )
 
-        for declared_string in ref_proc.procedure["string_declarations"]:
-            if (
-                declared_string["data_stack_frame_offset"]
-                == dsf_offset - ref_proc.data_stack_frame_offset - 1
-            ):
-                dsf_offset += (
-                    declared_string["length"] + 1
-                ) * array_index  # QStrs have length byte too
-                break
+        if string_dec_entry:
+            dsf_offset += (
+                string_dec_entry["length"] + 1
+            ) * array_index  # QStrs have length byte too
         else:
             raise ("Unable to determine string length")
 
@@ -682,16 +681,14 @@ def qcode_push_ee_array_val(procedure, data_stack: data_stack, stack: stack):
         dsf_offset += 8 * array_index
     elif array_type == 3:
         # String Array
+        string_dec_entry = ref_proc.procedure["string_declarations"].get(
+            dsf_offset - ref_proc.data_stack_frame_offset - 1, None
+        )
 
-        for declared_string in ref_proc.procedure["string_declarations"]:
-            if (
-                declared_string["data_stack_frame_offset"]
-                == dsf_offset - ref_proc.data_stack_frame_offset - 1
-            ):
-                dsf_offset += (
-                    declared_string["length"] + 1
-                ) * array_index  # QStrs have length byte too
-                break
+        if string_dec_entry:
+            dsf_offset += (
+                string_dec_entry["length"] + 1
+            ) * array_index  # QStrs have length byte too
         else:
             raise ("Unable to determine string length")
 

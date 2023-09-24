@@ -178,7 +178,7 @@ class loader:
         procedure_info["parameter_count"] = int(binary[binary_offset])
         binary_offset += 1
         procedure_info["parameters"] = []
-        for i in range(procedure_info["parameter_count"]):
+        for _ in range(procedure_info["parameter_count"]):
             # Parameters are given in REVERSE ORDER
             procedure_info["parameters"].append({"type": int(binary[binary_offset])})
             binary_offset += 1
@@ -263,7 +263,7 @@ class loader:
             _logger.info(json.dumps(procedure_info["global_references"], indent=4))
 
         # String Control Section
-        procedure_info["string_declarations"] = []
+        procedure_info["string_declarations"] = {}
         while True:
             dsf_offset = struct.unpack_from("<H", binary, binary_offset)[0]
             binary_offset += 2
@@ -273,9 +273,10 @@ class loader:
 
             string_length = int(binary[binary_offset])
             binary_offset += 1
-            procedure_info["string_declarations"].append(
-                {"data_stack_frame_offset": dsf_offset, "length": string_length}
-            )
+            procedure_info["string_declarations"][dsf_offset] = {
+                "data_stack_frame_offset": dsf_offset,
+                "length": string_length,
+            }
 
         # Array Control Section
         procedure_info["array_declarations"] = []
@@ -303,17 +304,18 @@ class loader:
             external_ref_counter += 2
 
         # Create optimised LUTs to allow O(1) lookup based on ee
-        procedure_info["cached_gr"] = {}
-        for gr_entry in procedure_info["global_references"]:
-            procedure_info["cached_gr"][gr_entry["ee"]] = gr_entry
+        procedure_info["cached_gr"] = {
+            gr_entry["ee"]: gr_entry for gr_entry in procedure_info["global_references"]
+        }
 
-        procedure_info["cached_cp"] = {}
-        for cp_entry in procedure_info["called_procedures"]:
-            procedure_info["cached_cp"][cp_entry["ee"]] = cp_entry
+        procedure_info["cached_cp"] = {
+            cp_entry["ee"]: cp_entry for cp_entry in procedure_info["called_procedures"]
+        }
 
-        procedure_info["cached_gd"] = {}
-        for gd_entry in procedure_info["global_declarations"]:
-            procedure_info["cached_gd"][gd_entry["ee"]] = gd_entry
+        procedure_info["cached_gd"] = {
+            gd_entry["ee"]: gd_entry
+            for gd_entry in procedure_info["global_declarations"]
+        }
 
         if loader.first_proc:
             loader.first_proc = False

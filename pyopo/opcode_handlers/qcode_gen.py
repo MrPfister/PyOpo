@@ -24,15 +24,12 @@ def qcode_usr(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_pause(procedure, data_stack: data_stack, stack: stack):
-    # print(f"{hex(op_code)} - PAUSE pop+1")
-
     timcode = stack.pop()
-
-    print(f" - PAUSE {timcode}")
+    _logger.info(f"0x85 - PAUSE {timcode}")
 
     if timcode == 0:
         # Await for keypress
-        print(f" - AWAITING KeyPress")
+        _logger.info(f" - AWAITING KeyPress")
         procedure.executable.pause_await = True
     elif timcode < 0:
         # Await till the sleep period is complete
@@ -46,7 +43,7 @@ def qcode_pause(procedure, data_stack: data_stack, stack: stack):
 def qcode_get(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0x0A - GET")
 
-    print(f" - AWAITING KeyPress")
+    _logger.info(f" - AWAITING KeyPress")
 
     # Getting and storing the keypress is done via the main execution loop
     procedure.executable.get_await = True
@@ -56,7 +53,7 @@ def qcode_get(procedure, data_stack: data_stack, stack: stack):
 def qcode_get_str(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0xC7 - GET$")
 
-    print(f" - AWAITING KeyPress")
+    _logger.info(f" - AWAITING KeyPress")
 
     # Getting and storing the keypress is done via the main execution loop
     procedure.executable.get_await = True
@@ -64,7 +61,7 @@ def qcode_get_str(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_key(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"0x57 0x13 - KEY")
+    _logger.debug("0x57 0x13 - KEY")
 
     print(f" - Last Keypress = {procedure.executable.last_keypress}")
 
@@ -76,7 +73,7 @@ def qcode_key(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_cmd(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"0x57 0xD6 - push$ CMD$ pop%")
+    _logger.debug("0x57 0xD6 - push$ CMD$ pop%")
 
     cmd_flag = stack.pop()
     cmd_res = ""
@@ -191,7 +188,7 @@ def qcode_parse(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_giprint(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"0xFC - GIPRINT")
+    _logger.debug("0xFC - GIPRINT")
 
     pc = procedure.get_program_counter()
     arg_count = int(procedure.procedure["qcode"][pc])  # N' format
@@ -203,7 +200,6 @@ def qcode_giprint(procedure, data_stack: data_stack, stack: stack):
         loc = stack.pop()
 
     str_val = stack.pop()
-    _logger.debug(f" - GIPRINT '{str_val}', {loc}")
 
     procedure.executable.window_manager.GIPRINT(str_val, loc)
 
@@ -249,7 +245,7 @@ def qcode_getevent(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_escape(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"0xA9 - ESCAPE")
+    _logger.debug("0xA9 - ESCAPE")
 
     q = procedure.read_qcode_byte()  # N' format
     # _logger.warning(f" - ESCAPE {q} - Not Implemented")
@@ -267,14 +263,14 @@ def qcode_busy(procedure, data_stack: data_stack, stack: stack):
 
     args = procedure.read_qcode_byte()  # N' format
 
-    for i in range(args):
+    for _ in range(args):
         stack.pop()
 
     # _logger.warning(f" - BUSY {args} - STUB")
 
 
 def qcode_statuswin(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"0xEF - STATUSWIN")
+    _logger.debug("0xEF - STATUSWIN")
 
     args = procedure.read_qcode_byte()  # N' format
 
@@ -312,11 +308,9 @@ def qcode_trap(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_err_virt(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"0x57 0x07 - ERR")
+    _logger.debug("0x57 0x07 - ERR")
 
     # Pushes the virtual flag for ERR
-
-    # _logger.warning(f" - Push virtual ERR value (9999)")
     stack.push(0, 9999)
 
 
@@ -356,14 +350,14 @@ def qcode_err_str(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_stop(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"0xBB - STOP")
+    _logger.debug("0xBB - STOP")
 
     # Stop Execution of the program
     procedure.flag_stop = True
 
 
 def qcode_raise(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"0xB8 - RAISE")
+    _logger.debug("0xB8 - RAISE")
 
     err_code = stack.pop()
     # _logger.warning(f"User Error Raised! {err_code}")
@@ -373,11 +367,11 @@ def qcode_raise(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_diaminit(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"0xFF 0x02 - DIAMINIT - Not Implemented")
+    _logger.debug("0xFF 0x02 - DIAMINIT - Not Implemented")
 
     args = procedure.read_qcode_byte()  # DBF D Byte
 
-    for i in range(args):
+    for _ in range(args):
         stack.pop()
 
 
@@ -388,6 +382,6 @@ def qcode_diampos(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_statuswininfo(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"0x57 0x53 - STATWININFO - STUB")
+    _logger.debug(f"0x57 0x53 - STATWININFO - Not Implemented")
 
     stack.push(0, 0)

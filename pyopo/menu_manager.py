@@ -106,14 +106,13 @@ class Menu:
 
         item_height = self.menu_font_bold.size("TEXT")[1]
 
-        menu_w = MENU_MARGIN * 2
         menu_h = item_height + MENU_PADDING_HEIGHT * 2
-
-        for mcard in self.menu_items:
-            mcard_title = mcard[0]
-
-            mcard_title_width = self.menu_font_bold.size(mcard_title)[0]
-            menu_w += mcard_title_width + MENU_PADDING_WIDTH * 3
+        menu_w = MENU_MARGIN * 2 + sum(
+            [
+                self.menu_font_bold.size(mcard[0])[0] + MENU_PADDING_WIDTH * 3
+                for mcard in self.menu_items
+            ]
+        )
 
         # Render drop shadow
         render_surface.fill(color=(128, 128, 128), rect=(2, 2, menu_w, menu_h))

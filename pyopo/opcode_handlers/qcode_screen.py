@@ -42,21 +42,21 @@ def qcode_print(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_font(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"0xFF 0x04 - FONT pop%2 pop%1 - STUB")
+    _logger.debug("0xFF 0x04 - FONT pop%2 pop%1 - STUB")
 
     pop_1 = stack.pop()
     pop_2 = stack.pop()
 
 
 def qcode_at(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"0x9E - AT pop%2 pop%1")
+    _logger.debug("0x9E - AT pop%2 pop%1")
 
     x, y = stack.pop_2()
     procedure.executable.window_manager.text_window.AT(x, y)
 
 
 def qcode_cls(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"0xA2 - CLS)")
+    _logger.debug("0xA2 - CLS)")
 
     procedure.executable.window_manager.text_window.CLS()
 

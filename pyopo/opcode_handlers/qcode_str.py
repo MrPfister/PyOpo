@@ -137,7 +137,7 @@ def qcode_gen(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_num(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"0x57 0xCE - push$ NUM$(pop*2, pop%1)")
+    _logger.debug("0x57 0xCE - push$ NUM$(pop*2, pop%1)")
 
     y = stack.pop()
     x = stack.pop()
@@ -243,7 +243,7 @@ def qcode_hex(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_sci(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"0x57 0xD2 - push$ LOWER$ pop$")
+    _logger.debug("0x57 0xD2 - push$ LOWER$ pop$")
 
     z = stack.pop()
     y = stack.pop()
@@ -261,7 +261,5 @@ def qcode_sci(procedure, data_stack: data_stack, stack: stack):
         res = " " * diff + res
     elif len(res) > z:
         res = "*" * z
-
-    # print(f" - SCI$({x}, {y}, {z}) = {res}")
 
     stack.push(3, res)
