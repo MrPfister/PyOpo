@@ -97,9 +97,7 @@ def qcode_dayname(procedure, data_stack: data_stack, stack: stack):
 def qcode_days(procedure, data_stack: data_stack, stack: stack):
     _logger.debug(f"0x57 0x40 - DAYS pop%3 pop%2 pop%1")
 
-    y = stack.pop()
-    m = stack.pop()
-    d = stack.pop()
+    d, m, y = stack.pop_n(3)
 
     # Input validation
     if y < 1900 or y > 2100:
@@ -122,14 +120,7 @@ def qcode_days(procedure, data_stack: data_stack, stack: stack):
 def qcode_secstodate(procedure, data_stack: data_stack, stack: stack):
     _logger.debug(f"0xFB - secstodate pop8 pop%7 pop%6 pop%5 pop%4 pop%3 pop%2 pop%1")
 
-    yrday_addr = stack.pop()
-    sc_addr = stack.pop()
-    mn_addr = stack.pop()
-    hr_addr = stack.pop()
-    dy_addr = stack.pop()
-    mo_addr = stack.pop()
-    yr_addr = stack.pop()
-    s = stack.pop()
+    s, yr_addr, mo_addr, dy_addr, hr_addr, mn_addr, sc_addr, yrday_addr = stack.pop_n(8)
 
     secstodate = datetime.datetime.fromtimestamp(s)
 

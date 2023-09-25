@@ -26,9 +26,7 @@ def qcode_push_var(procedure, data_stack: data_stack, stack: stack):
 
     value = data_stack.read(op_code, dsf_offset)
 
-    _logger.debug(
-        f"{hex(op_code)} - push+ {value} of Type: {op_code} at LL+ DSF Offset: {dsf_offset}"
-    )
+    # _logger.debug(f"{hex(op_code)} - push+ {value} of Type: {op_code} at LL+ DSF Offset: {dsf_offset}")
 
     stack.push(op_code, value)
 
@@ -132,9 +130,7 @@ def qcode_push_value_field(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_push_var_array(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(
-        f"{hex(procedure.get_executed_opcode())} - push+ the value of LL+(pop%)"
-    )
+    # _logger.debug(f"{hex(procedure.get_executed_opcode())} - push+ the value of LL+(pop%)")
 
     array_type = procedure.get_executed_opcode() - 0x10
 
@@ -142,9 +138,7 @@ def qcode_push_var_array(procedure, data_stack: data_stack, stack: stack):
     dsf_offset = procedure.data_stack_frame_offset + offset
     array_index = stack.pop() - 1  # OPL Indexes start at 1
 
-    _logger.debug(
-        f"Type: {array_type} at DSF Offset: {dsf_offset} Array Offset: {array_index}"
-    )
+    # _logger.debug(f"Type: {array_type} at DSF Offset: {dsf_offset} Array Offset: {array_index}")
 
     if array_type == 0:
         # Word Array
@@ -175,12 +169,9 @@ def qcode_push_var_array(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_push_addr(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"{hex(procedure.get_executed_opcode())} - push= the address of LL+")
+    # _logger.debug(f"{hex(procedure.get_executed_opcode())} - push= the address of LL+")
 
     dsf_offset = procedure.data_stack_frame_offset + procedure.read_qcode_uint16()
-
-    _logger.debug(f" -  DSF Offset: {dsf_offset}")
-
     stack.push(4, dsf_offset)  # Push
 
 
@@ -203,7 +194,7 @@ def qcode_usub(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_push_vv_plus(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"{hex( procedure.get_executed_opcode())} - push+ VV+")
+    # _logger.debug(f"{hex( procedure.get_executed_opcode())} - push+ VV+")
 
     stack_type = procedure.get_executed_opcode() - 0x28
     pc = procedure.get_program_counter()
@@ -213,16 +204,14 @@ def qcode_push_vv_plus(procedure, data_stack: data_stack, stack: stack):
         stack_val = procedure.read_qcode_int16()
     elif stack_type == 1:
         # Int32 - Long
-        stack_val = struct.unpack_from("<i", procedure.procedure["qcode"], pc)[0]
-        procedure.set_program_counter_delta(4)
+        stack_val = procedure.read_qcode_long()
     elif stack_type == 2:
         # Float
-        stack_val = struct.unpack_from("<d", procedure.procedure["qcode"], pc)[0]
-        procedure.set_program_counter_delta(8)
+        stack_val = procedure.read_qcode_float()
     elif stack_type == 3:
         # String
         stack_val = loader._read_qstr(pc, procedure.procedure["qcode"])
-        _logger.info(f"VV+ value: {stack_type} {len(stack_val)} {stack_val}")
+        # _logger.info(f"VV+ value: {stack_type} {len(stack_val)} {stack_val}")
         procedure.set_program_counter_delta(len(stack_val) + 1)
     else:
         raise ("Invalid VV opcode type")
@@ -292,8 +281,7 @@ def qcode_store_pop1_in_pop2(procedure, data_stack: data_stack, stack: stack):
 
     stack_type = procedure.get_executed_opcode() - 0x84
 
-    stack_val = stack.pop()
-    stack_addr = stack.pop()
+    stack_addr, stack_val = stack.pop_2()
 
     if stack_addr >= 1024 * 1024:
         # Database
@@ -606,14 +594,19 @@ def qcode_push_ee_array_val(procedure, data_stack: data_stack, stack: stack):
 
     if dsf_offset == -1:
         # Attempt to find the EE
+
+        gd = procedure.procedure["cached_gd"].get(ee_ref, None)
+
+        """
         gd_list = list(
             filter(
                 lambda gd: gd["ee"] == ee_ref,
                 procedure.procedure["global_declarations"],
             )
         )
-        if len(gd_list) > 0:
-            gd = gd_list[-1]
+        """
+
+        if gd:
             gd_name = gd["name"]
 
             # Check the first instance in the DS
@@ -663,23 +656,13 @@ def qcode_push_ee_array_val(procedure, data_stack: data_stack, stack: stack):
     # Cache the DSF offset for future use
     procedure.ee_dsf_cache[ee_ref] = dsf_offset
 
-    array_index = stack.pop() - 1  # OPL indexes start at 1
+    if array_type != 3:
+        ee_val = data_stack.read(array_type, dsf_offset, stack.pop())
+    else:
+        # Special case for strings
+        array_index = stack.pop() - 1  # OPL indexes start at 1
+        assert array_index >= 0
 
-    if array_index < 0:
-        # _logger.warning(f'Error: push_ee_array_val Array Index {array_index} out of bounds!')
-        raise (KErrOutOfRange)
-
-    if array_type == 0:
-        # Word Array
-        dsf_offset += 2 * array_index
-
-    elif array_type == 1:
-        # Long Array
-        dsf_offset += 4 * array_index
-    elif array_type == 2:
-        # Float Array
-        dsf_offset += 8 * array_index
-    elif array_type == 3:
         # String Array
         string_dec_entry = ref_proc.procedure["string_declarations"].get(
             dsf_offset - ref_proc.data_stack_frame_offset - 1, None
@@ -692,10 +675,8 @@ def qcode_push_ee_array_val(procedure, data_stack: data_stack, stack: stack):
         else:
             raise ("Unable to determine string length")
 
-    ee_val = data_stack.read(array_type, dsf_offset)
+        ee_val = data_stack.read(array_type, dsf_offset)
 
-    _logger.debug(
-        f" - Storing Value {ee_val} DSF Addr {dsf_offset} of EE ref {ee_ref} ({array_index})"
-    )
+    _logger.debug(f" - Storing Value {ee_val} DSF Addr {dsf_offset} of EE ref {ee_ref}")
 
     stack.push(array_type, ee_val)

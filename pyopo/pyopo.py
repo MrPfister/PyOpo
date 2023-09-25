@@ -63,6 +63,9 @@ class executable:
         self.header = header
         self.procedure_table = procedure_table
 
+        # Create a ref cache of the proc table for faster lookups
+        self.update_procedure_call_cache()
+
         # Modules (LOADM)
         self.modules = []
 
@@ -131,6 +134,17 @@ class executable:
             "m9": 0.0,
         }
 
+    def update_procedure_call_cache(self) -> None:
+        """Caches procedures to the first instance of each name"""
+
+        self.procedure_table_caller_lookup = {}
+
+        for proc in self.procedure_table:
+            proc_name = proc["name"].upper()
+
+            if proc_name not in self.procedure_table_caller_lookup:
+                self.procedure_table_caller_lookup[proc_name] = proc
+
     @staticmethod
     def load_executable(file: str) -> Self:
         """Loads a .OPO or .OPA file, returning its runtime environment"""
@@ -179,6 +193,9 @@ class executable:
 
         self.procedure_table.extend(module.procedure_table)
 
+        # Rebuild the caller cache
+        self.update_procedure_call_cache()
+
     def unloadm(self, module: Self) -> None:
         """Runtime support for the UNLOADM OPL Command"""
         raise NotImplementedError()
@@ -197,10 +214,8 @@ class executable:
         raise ValueError
 
     def execute(self):
-        proc = self.procedure_table[0].copy()
-
         # Add first procedure to the stack
-        self.proc_stack.append(stack_entry(proc, self))
+        self.proc_stack.append(stack_entry(self.procedure_table[0].copy(), self))
         self._current_proc = self.proc_stack[-1]  # Cache ref
 
         profiling_starttime = time.time()
@@ -332,8 +347,8 @@ class executable:
                 continue
 
             # Handle any awaiting IO actions
-            for hal_ref in self.io_hals:
-                self.io_hals[hal_ref].process_io()
+            for hal_ref in self.io_hals.values():
+                hal_ref.process_io()
 
             # Execute instruction from the topmost procedure
             check_flags = self._current_proc.execute_instruction()
@@ -355,6 +370,16 @@ class executable:
                     # The Callee Procedure has flagged it is calling another procedure
 
                     # Via LOADM there may be more than 1 instance of a procedure with the same name.
+
+                    proc_call = self.procedure_table_caller_lookup.get(
+                        self._current_proc.flag_callproc.upper(), None
+                    )
+
+                    if not proc_call:
+                        # Unable to find named procedure
+                        raise ("Procedure not found")
+
+                    """
                     proc_call = list(
                         filter(
                             lambda p: p["name"].upper()
@@ -362,7 +387,6 @@ class executable:
                             self.procedure_table,
                         )
                     )
-
                     if len(proc_call) == 0:
                         # Unable to find named procedure
                         proc_names = list(
@@ -375,28 +399,21 @@ class executable:
                         _logger.warning(
                             f"More than one procedure entry exists for {self._current_proc.flag_callproc.upper()}"
                         )
+                    """
 
                     # Reset the procedure calling flag
                     self._current_proc.flag_callproc = None
 
                     # Add the called procedure to the stack
-                    self.proc_stack.append(stack_entry(proc_call[0], self))
+                    self.proc_stack.append(stack_entry(proc_call, self))
                     self._current_proc = self.proc_stack[-1]
 
                     # OPO adds 2 stack entries per param when calling, verify type codes and remove them
-                    for i in range(self._current_proc.procedure["parameter_count"]):
-                        expected_param_typecode = self._current_proc.procedure[
-                            "parameters"
-                        ][i]["type"]
-                        received_param_typecode = self.stack.pop()
+                    for param in self._current_proc.procedure["parameters"]:
+                        param["value"], callee_type = self.stack.pop_2()
 
-                        if expected_param_typecode != received_param_typecode:
-                            # _logger.warning(f"Mismatch {expected_param_typecode} vs {received_param_typecode}")
+                        if param["type"] != callee_type:
                             raise ("Invalid PROC call, type mismatch")
-
-                        self._current_proc.procedure["parameters"][i][
-                            "value"
-                        ] = self.stack.pop()
 
                 elif self._current_proc.flag_return:
                     # The procedure is being returned, or has completed execution
@@ -475,11 +492,12 @@ class executable:
 
 
 class stack_entry:
-    def __init__(self, procedure_table_entry, executable):
-        # Cached struct unpackers
-        self._struct_unpacker_uint16 = struct.Struct("<H")
-        self._struct_unpacker_int16 = struct.Struct("<h")
+    STRUCT_UNPACKER_UINT16 = struct.Struct("<H")
+    STRUCT_UNPACKER_INT16 = struct.Struct("<h")
+    STRUCT_UNPACKER_INT32 = struct.Struct("<i")
+    STRUCT_UNPACKER_FLOAT64 = struct.Struct("<d")
 
+    def __init__(self, procedure_table_entry, executable):
         # Cache for EE references used by the procedure
         self.ee_dsf_cache: Dict[int, int] = {}
 
@@ -511,10 +529,6 @@ class stack_entry:
 
         # Error Handling
         self.error_handler_offset = 0
-
-        _logger.info(
-            f"Adding PROC {self.procedure['name']}: to the stack for execution"
-        )
 
         # Allocate Procedure Memory
         self.data_stack_frame_offset = self.executable.data_stack.allocate_frame(
@@ -566,7 +580,7 @@ class stack_entry:
 
     def read_qcode_int16(self) -> int:
         """Read the next signed 16bit integer from the qcode sequence and iterate the program counter accordingly"""
-        val = self._struct_unpacker_int16.unpack_from(
+        val = stack_entry.STRUCT_UNPACKER_INT16.unpack_from(
             self._qcode, self._program_counter
         )[0]
         self._program_counter += 2
@@ -574,10 +588,26 @@ class stack_entry:
 
     def read_qcode_uint16(self) -> int:
         """Read the next unsigned 16bit integer from the qcode sequence and iterate the program counter accordingly"""
-        val = self._struct_unpacker_uint16.unpack_from(
+        val = stack_entry.STRUCT_UNPACKER_UINT16.unpack_from(
             self._qcode, self._program_counter
         )[0]
         self._program_counter += 2
+        return val
+
+    def read_qcode_long(self) -> int:
+        """Read the next signed 32bit integer (OPL Long) from the qcode sequence and iterate the program counter accordingly"""
+        val = stack_entry.STRUCT_UNPACKER_INT32.unpack_from(
+            self._qcode, self._program_counter
+        )[0]
+        self._program_counter += 4
+        return val
+
+    def read_qcode_float(self) -> int:
+        """Read the next 64bit IEEE Float from the qcode sequence and iterate the program counter accordingly"""
+        val = stack_entry.STRUCT_UNPACKER_FLOAT64.unpack_from(
+            self._qcode, self._program_counter
+        )[0]
+        self._program_counter += 8
         return val
 
     def execute_instruction(self) -> bool:

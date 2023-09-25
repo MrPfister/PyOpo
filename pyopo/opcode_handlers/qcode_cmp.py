@@ -22,8 +22,7 @@ T_ADDR = 4
 def qcode_cmp_less_than(procedure, data_stack: data_stack, stack: stack):
     # print(f"{hex(op_code)} - push% pop+2 < pop+1")
 
-    pop_1 = stack.pop()
-    pop_2 = stack.pop()
+    pop_2, pop_1 = stack.pop_2()
 
     res = -1 if pop_2 < pop_1 else 0
 
@@ -33,16 +32,14 @@ def qcode_cmp_less_than(procedure, data_stack: data_stack, stack: stack):
 
 
 def qcode_cmp_equals(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(
-        f"{hex(procedure.get_executed_opcode())} - push% pop+2 == pop+1  (compare, not assign)"
-    )
+    # _logger.debug(f"{hex(procedure.get_executed_opcode())} - push% pop+2 == pop+1  (compare, not assign)")
 
     res = -1 if stack.pop() == stack.pop() else 0
     stack.push(T_INT_16, res)
 
 
 def qcode_cmp_not_equals(procedure, data_stack: data_stack, stack: stack):
-    _logger.debug(f"{hex(procedure.get_executed_opcode())} - push% pop+2 != pop+1")
+    # _logger.debug(f"{hex(procedure.get_executed_opcode())} - push% pop+2 != pop+1")
 
     res = -1 if stack.pop() != stack.pop() else 0
     stack.push(T_INT_16, res)
@@ -51,34 +48,25 @@ def qcode_cmp_not_equals(procedure, data_stack: data_stack, stack: stack):
 def qcode_cmp_greater_equal(procedure, data_stack: data_stack, stack: stack):
     # print(f"{hex(op_code)} - push% pop+2 >= pop+1")
 
-    pop_1 = stack.pop()
-    pop_2 = stack.pop()
+    pop_2, pop_1 = stack.pop_2()
 
     res = -1 if pop_2 >= pop_1 else 0
-
-    # print(f" - {pop_2} >= {pop_1} = {res}")
-
     stack.push(T_INT_16, res)
 
 
 def qcode_cmp_greater(procedure, data_stack: data_stack, stack: stack):
     # print(f"{hex(op_code)} - push% pop+2 > pop+1")
 
-    pop_1 = stack.pop()
-    pop_2 = stack.pop()
+    pop_2, pop_1 = stack.pop_2()
 
     res = -1 if pop_2 > pop_1 else 0
-
-    # print(f" - {pop_2} > {pop_1} = {res}")
-
     stack.push(T_INT_16, res)
 
 
 def qcode_cmp_less_than_equal(procedure, data_stack: data_stack, stack: stack):
     # print(f"{hex(op_code)} - push% pop+2 >= pop+1")
 
-    pop_1 = stack.pop()
-    pop_2 = stack.pop()
+    pop_2, pop_1 = stack.pop_2()
 
     res = -1 if pop_2 <= pop_1 else 0
 
@@ -101,8 +89,7 @@ def qcode_cmp_if(procedure, data_stack: data_stack, stack: stack):
 def qcode_cmp_and(procedure, data_stack: data_stack, stack: stack):
     # print(f"{hex(op_code)} - push% pop+2 AND pop+1")
 
-    pop_1 = stack.pop()
-    pop_2 = stack.pop()
+    pop_2, pop_1 = stack.pop_2()
 
     arg_type = procedure.get_executed_opcode() - 0x5C
 
@@ -140,8 +127,7 @@ def qcode_cmp_not(procedure, data_stack: data_stack, stack: stack):
 def qcode_cmp_or(procedure, data_stack: data_stack, stack: stack):
     # print(f"{hex(op_code)} - push% pop+2 OR pop+1")
 
-    pop_1 = stack.pop()
-    pop_2 = stack.pop()
+    pop_2, pop_1 = stack.pop_2()
 
     arg_type = procedure.get_executed_opcode() - 0x60
 

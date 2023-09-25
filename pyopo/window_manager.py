@@ -6,6 +6,8 @@ import logging.config
 from pyopo.opl_exceptions import *
 from typing import Optional, List, Tuple
 
+from functools import lru_cache
+
 import pygame
 from pygame.locals import *
 
@@ -17,7 +19,7 @@ OPO_WINDOW_SCALE = 2  # Scaling for HiDPI screens
 
 
 class text_screen:
-    def __init__(self, max_width, max_height, window_surface):
+    def __init__(self, max_width: int, max_height: int, window_surface):
         self.default_font = pygame.font.Font(pygame.font.get_default_font(), 8)
 
         self.char_width = self.default_font.size("X")[0]
@@ -45,14 +47,14 @@ class text_screen:
         self.win_x = 0
         self.win_y = 0
 
-    def AT(self, x, y):
+    def AT(self, x: int, y: int) -> None:
         self.at_x = x
         self.at_y = y
 
-    def STYLE(self, style):
+    def STYLE(self, style: int) -> None:
         self.style = style
 
-    def CLS(self):
+    def CLS(self) -> None:
         self.char_grid = [self.width_chars, self.height_chars]
         self.window_surface.fill(
             (255, 255, 255), (self.win_x, self.win_y, self.width, self.height)
@@ -65,7 +67,7 @@ class DrawableSprite:
 
     draw_sprite = False
 
-    def __init__(self, ID):
+    def __init__(self, ID: int):
         self.ID = ID
         self.idx = 0
         self.start_time_tenths = None
@@ -129,8 +131,19 @@ class DrawableSprite:
 
 
 class Window:
+    GFONTS = None
+
     def __init__(
-        self, x, y, width, height, visible, flags, ID, read_only=False, drawable=False
+        self,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        visible,
+        flags: int,
+        ID: int,
+        read_only=False,
+        drawable=False,
     ) -> None:
         self.ID = ID
 
@@ -152,7 +165,54 @@ class Window:
 
         self.visible = visible
 
-        self.gFONTS = {
+        self.init_GFONTS()
+        self.current_gFONT: pygame.font.Font = Window.GFONTS[11]["Font"]
+
+        self.gGREY_mode = 0
+        self.gGMODE_mode = 0
+        self.gTMODE_mode = 0
+
+        self.is_drawable = drawable
+        self.is_read_only = read_only
+
+        # Even with gUPDATE OFF, some commands require forced updates (those that update state or return a value)
+        self.update_required = False
+
+        """
+        i%(1) lowest character code
+        i%(2) highest character code
+        i%(3) height of font
+        i%(4) descent of font
+        i%(5) ascent of font
+        i%(6) width of ‘0’ character
+        i%(7) maximum character width
+        i%(8) flags for font (see below)
+        i%(9-17) name of font
+        i%(18) current graphics mode (gGMODE)
+        i%(19) current text mode (gTMODE)
+        i%(20) current style (gSTYLE)
+        i%(21) cursor state (ON=1,OFF=0)
+        i%(22) ID of window containing cursor (-1 for text cursor)
+        i%(23) cursor width
+        i%(24) cursor height
+        i%(25) cursor ascent
+        i%(26) cursor x position in window
+        i%(27) cursor y position in window
+        i%(28) 1 if drawable is a bitmap
+        i%(29) cursor effects
+        i%(30) gGREY setting
+        OPL
+        ALPHABETIC LISTING 71
+        i%(31) reserved (window server ID of drawable)
+        i%(32) reserved
+        """
+
+    def init_GFONTS(self) -> None:
+        """The PSION system fonts can only be stored once the pygame environment is initialised"""
+        if Window.GFONTS:
+            return
+
+        Window.GFONTS = {
             1: {
                 "Name": "Series 3 normal",
                 "Font": pygame.font.Font(pygame.font.get_default_font(), 8),
@@ -206,47 +266,6 @@ class Window:
                 "Font": pygame.font.Font(pygame.font.get_default_font(), 17),
             },
         }
-
-        self.current_gFONT: pygame.font.Font = self.gFONTS[11]["Font"]
-
-        self.gGREY_mode = 0
-        self.gGMODE_mode = 0
-        self.gTMODE_mode = 0
-
-        self.is_drawable = drawable
-        self.is_read_only = read_only
-
-        # Even with gUPDATE OFF, some commands require forced updates (those that update state or return a value)
-        self.update_required = False
-
-        """
-        i%(1) lowest character code
-        i%(2) highest character code
-        i%(3) height of font
-        i%(4) descent of font
-        i%(5) ascent of font
-        i%(6) width of ‘0’ character
-        i%(7) maximum character width
-        i%(8) flags for font (see below)
-        i%(9-17) name of font
-        i%(18) current graphics mode (gGMODE)
-        i%(19) current text mode (gTMODE)
-        i%(20) current style (gSTYLE)
-        i%(21) cursor state (ON=1,OFF=0)
-        i%(22) ID of window containing cursor (-1 for text cursor)
-        i%(23) cursor width
-        i%(24) cursor height
-        i%(25) cursor ascent
-        i%(26) cursor x position in window
-        i%(27) cursor y position in window
-        i%(28) 1 if drawable is a bitmap
-        i%(29) cursor effects
-        i%(30) gGREY setting
-        OPL
-        ALPHABETIC LISTING 71
-        i%(31) reserved (window server ID of drawable)
-        i%(32) reserved
-        """
 
     def gAT(self, x: int, y: int) -> None:
         self.gATx = x
@@ -513,7 +532,7 @@ class Window:
         self.update_required = True
 
     def gBORDER(
-        self, flags, width: int | None = None, height: int | None = None
+        self, flags: int, width: int | None = None, height: int | None = None
     ) -> None:
         border_x = self.gATx
         border_y = self.gATy
@@ -567,7 +586,7 @@ class Window:
         # Just draw a simple border (gBORDER)
         self.gBORDER(flags, width, height)
 
-    def gPRINT(self, text):
+    def gPRINT(self, text: str) -> None:
         sanitised = str(text).replace("\0", "")
         if len(sanitised) == 0:
             # No text to render, skip
@@ -581,9 +600,8 @@ class Window:
         # Subtract the height of the text; the y pos is the baseline
         if self.gGREY_mode > 0:
             # Grey plane
-            font_surface = self.current_gFONT.render(
+            font_surface = self.create_text_surface(
                 sanitised,
-                True,
                 (255, 255, 255, 255) if self.gTMODE_mode == 1 else (128, 128, 128, 0),
             )
 
@@ -595,9 +613,8 @@ class Window:
             )
 
         if self.gGREY_mode == 0 or self.gGREY_mode == 2:
-            font_surface = self.current_gFONT.render(
+            font_surface = self.create_text_surface(
                 sanitised,
-                True,
                 (255, 255, 255, 255) if self.gTMODE_mode == 1 else (0, 0, 0, 0),
             )
 
@@ -610,6 +627,16 @@ class Window:
 
         self.gATx += font_surface.get_width()
 
+    @lru_cache(maxsize=1024)
+    def create_text_surface(
+        self, text: str, foreground: pygame.Color
+    ) -> pygame.Surface:
+        return self.current_gFONT.render(
+            text,
+            True,
+            foreground,
+        )
+
     def gPRINTB(
         self, text: str, width: int, align: int, top: int, bottom: int, margin: int
     ) -> None:
@@ -621,8 +648,9 @@ class Window:
         # Subtract the height of the text; the y pos is the baseline
         if self.gGREY_mode > 0:
             # Grey plane
-            font_surface = self.current_gFONT.render(
-                sanitised, True, (128, 128, 128, 0)
+            font_surface = self.create_text_surface(
+                sanitised,
+                (128, 128, 128, 0),
             )
 
             surface_height = font_surface.get_height() + top + bottom
@@ -638,7 +666,10 @@ class Window:
             )
 
         if self.gGREY_mode == 0 or self.gGREY_mode == 2:
-            font_surface = self.current_gFONT.render(sanitised, True, (0, 0, 0, 0))
+            font_surface = self.create_text_surface(
+                sanitised,
+                (0, 0, 0, 0),
+            )
 
             surface_height = font_surface.get_height() + top + bottom
             # surface_width = font_surface.get_width() + margin * 2
@@ -705,7 +736,10 @@ class Window:
         text = text.replace("\00", "")
         if len(text) > 0:
             # Text for the button
-            font_surface = self.current_gFONT.render(text, True, (0, 0, 0, 0))
+            font_surface = self.create_text_surface(
+                text,
+                (0, 0, 0, 0),
+            )
 
             # The text may need to be clipped to the button
             max_text_width = min(font_surface.get_width(), width)
@@ -721,10 +755,10 @@ class Window:
                 )
 
     def gFONT(self, font_id: int) -> None:
-        if font_id not in self.gFONTS:
+        if font_id not in Window.GFONTS:
             raise (KErrOutOfRange)
 
-        self.current_gFONT = self.gFONTS[font_id]["Font"]
+        self.current_gFONT = Window.GFONTS[font_id]["Font"]
 
     def gGREY(self, mode: int) -> None:
         self.gGREY_mode = mode
@@ -962,7 +996,7 @@ class WindowManager:
         width: int,
         height: int,
         visible,
-        flags,
+        flags: int,
         read_only=False,
         drawable=False,
     ) -> int:
@@ -1047,8 +1081,9 @@ class WindowManager:
         bmp_offset = 8 + index * 12  # Offset of the 1st bitmap data
 
         # int16 offset 0 is CRC
-        width = struct.unpack_from("<H", bytes, bmp_offset + 2)[0]
-        height = struct.unpack_from("<H", bytes, bmp_offset + 4)[0]
+        width, height = struct.unpack_from("<HH", bytes, bmp_offset + 2)
+
+        # height = struct.unpack_from("<H", bytes, bmp_offset + 4)[0]
         # byte_len = struct.unpack_from("<H", bytes, bmp_offset + 6)[0]
         data_offset = (
             bmp_offset + 12 + struct.unpack_from("<L", bytes, bmp_offset + 8)[0]
@@ -1129,16 +1164,13 @@ class WindowManager:
         self.screen_buffer = pygame.Surface((width, height))
 
     def composite(self, executable, force=False):
-        windows_update_required = (
-            True
-            if len(list(filter(lambda w: w.update_required, self.windows))) > 0
-            else False
+        windows_update_required = self.gupdate_enabled and next(
+            (True for w in self.windows if w.update_required), False
         )
-        windows_update_required = windows_update_required or self.update_required
 
         if (
             windows_update_required
-            or self.gupdate_enabled
+            or self.update_required
             or force
             or executable.dialog_manager
             or executable.menu_manager
@@ -1146,7 +1178,6 @@ class WindowManager:
         ):
             # Clear flag from specific graphic operations
             self.update_required = False
-            windows_update_required = False
 
             self.screen_buffer.fill((255, 255, 255, 255))
 
@@ -1155,20 +1186,20 @@ class WindowManager:
                 # Clear flag from specific graphic operations
                 window.update_required = False
 
-                if window.visible == 1:
-                    self.screen_buffer.blit(
-                        window.black_plane_surface,
-                        Rect(window.gPOSx, window.gPOSy, window.width, window.height),
-                    )
+                if window.visible != 1:
+                    continue
 
-                    if self.defaultwin_mode == 1:
-                        self.screen_buffer.blit(
-                            window.grey_plane_surface,
-                            Rect(
-                                window.gPOSx, window.gPOSy, window.width, window.height
-                            ),
-                            special_flags=pygame.BLEND_MULT,
-                        )
+                self.screen_buffer.blit(
+                    window.black_plane_surface,
+                    Rect(window.gPOSx, window.gPOSy, window.width, window.height),
+                )
+
+                if self.defaultwin_mode == 1:
+                    self.screen_buffer.blit(
+                        window.grey_plane_surface,
+                        Rect(window.gPOSx, window.gPOSy, window.width, window.height),
+                        special_flags=pygame.BLEND_MULT,
+                    )
 
             # Render any active sprite animation
             if DrawableSprite.draw_sprite:
@@ -1231,8 +1262,9 @@ class WindowManager:
 
             # GIPRINT overlay
             if self.giprint:
-                font_surface = self.default_font.render(
-                    self.giprint["prompt"], True, (255, 255, 255, 255)
+                font_surface = self.create_text_surface(
+                    self.giprint["prompt"],
+                    (255, 255, 255, 255),
                 )
 
                 if self.giprint["location"] == 0:
@@ -1520,8 +1552,9 @@ class WindowManager:
             self.composite(self.executable, True)
         else:
             self.gupdate_enabled = True if arg == 1 else False
-            _logger.debug(f" - gUPDATE INPUT: {arg}")
-            _logger.debug(f" - gUPDATE STATUS: {self.gupdate_enabled}")
+            _logger.info(f" - gUPDATE INPUT: {arg}")
+            _logger.info(f" - gUPDATE STATUS: {self.gupdate_enabled}")
+            input()
 
     def DEFAULTWIN(self, mode: int) -> None:
         self.defaultwin_mode = mode
@@ -1538,6 +1571,16 @@ class WindowManager:
         self.update_required = True
         pygame.display.set_caption(name)
 
+    @lru_cache(maxsize=1024)
+    def create_text_surface(
+        self, text: str, foreground: pygame.Color
+    ) -> pygame.Surface:
+        return self.default_font.render(
+            text,
+            True,
+            foreground,
+        )
+
     def gPEEKLINE(self, id: int, x: int, y: int, ln: int) -> str:
         surface_to_peek = self.screen_buffer
         if id != 0:
@@ -1553,6 +1596,7 @@ class WindowManager:
                         surface_to_peek = self.windows[i].grey_plane_surface
                     else:
                         surface_to_peek = self.windows[i].black_plane_surface
+                    break
 
         if x > surface_to_peek.get_width() or y > surface_to_peek.get_height():
             return "0" * ln
@@ -1610,15 +1654,14 @@ class WindowManager:
             tenths_delta = tenths_delta % sprite.timespan_tenths
 
         # Work out which sprite to draw
-        bitmap_set = list(
-            filter(
-                lambda s: s["tenths_delta"] >= tenths_delta
-                and s["tenths_delta"] + s["tenths"] <= tenths_delta,
-                sprite.bitmap_sets,
-            )
-        )
+        bitmap_set = [
+            s
+            for s in sprite.bitmap_sets
+            if s["tenths_delta"] >= tenths_delta
+            and s["tenths_delta"] + s["tenths"] <= tenths_delta
+        ]
 
-        if bitmap_set is None or len(bitmap_set) == 0:
+        if len(bitmap_set) == 0:
             raise ("Failed to find sprite")
 
         bitmap_set = bitmap_set[-1]["bitmaps"]

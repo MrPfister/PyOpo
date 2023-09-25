@@ -89,9 +89,8 @@ def qcode_gcreate_5(procedure, data_stack: data_stack, stack: stack):
     _logger.debug(f"0x57 0x26 - PUSH% gCREATE")
 
     # x%,y%,w%,h%,v%
-    v = stack.pop()
-    w, h = stack.pop_2()
-    x, y = stack.pop_2()
+
+    x, y, w, h, v = stack.pop_n(5)
 
     id = procedure.get_window_manager().gCREATE(x, y, w, h, v, 0)
 
@@ -103,10 +102,8 @@ def qcode_gcreate_6(procedure, data_stack: data_stack, stack: stack):
 
     # 5 series: x%,y%,w%,h%,v%, flags%
     # 3 series: x%,y%,w%,h%,v%, grey%
-    flags = stack.pop()
-    v = stack.pop()
-    w, h = stack.pop_2()
-    x, y = stack.pop_2()
+
+    x, y, w, h, v, flags = stack.pop_n(6)
 
     id = procedure.get_window_manager().gCREATE(x, y, w, h, v, flags)
 
@@ -146,8 +143,7 @@ def qcode_gmove(procedure, data_stack, stack) -> None:
 def qcode_gorder(procedure, data_stack, stack) -> None:
     _logger.debug("0xCF - gORDER pop%2, pop%1")
 
-    index = stack.pop()
-    id = stack.pop()
+    id, index = stack.pop_2()
 
     _logger.debug(f" - gORDER {id}, {index}")
     procedure.get_window_manager().gORDER(id, index)
@@ -252,10 +248,7 @@ def qcode_guse(procedure, data_stack, stack) -> None:
 def qcode_gbutton(procedure, data_stack, stack) -> None:
     _logger.debug(f"0xFF 0x0F - gBUTTON pop%1")
 
-    st = stack.pop()
-    width, height = stack.pop_2()
-    ty = stack.pop()
-    text = stack.pop()
+    text, ty, width, height, st = stack.pop_n(5)
 
     _logger.debug(f" - gBUTTON '{text}', {ty}, {width}, {height}, {st}")
     procedure.get_graphics_context().gBUTTON(text, ty, width, height, st)
@@ -286,8 +279,7 @@ def qcode_ggrey(procedure, data_stack: data_stack, stack: stack):
 def qcode_gfill(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0xDF - gFILL")
 
-    gmode = stack.pop()
-    width, height = stack.pop_2()
+    width, height, gmode = stack.pop_n(3)
 
     _logger.debug(f"gFILL {width}, {height}, {gmode}")
     procedure.get_graphics_context().gFILL(width, height, gmode)
@@ -329,10 +321,7 @@ def qcode_gvisible(procedure, data_stack, stack) -> None:
 def qcode_gpeekline(procedure, data_stack, stack) -> None:
     _logger.debug("0xE6 - gPEEKLINE  pop%5 pop%4 pop%3 pop%2 pop%1")
 
-    ln = stack.pop()
-    d_addr = stack.pop()
-    x, y = stack.pop_2()
-    id = stack.pop()
+    id, x, y, d_addr, ln = stack.pop_n(5)
 
     _logger.debug(f" - gPEEKLINE {id}, {x}, {y}, {d_addr}, {ln}")
     line_data_bits = procedure.get_window_manager().gPEEKLINE(id, x, y, ln)
@@ -436,11 +425,7 @@ def qcode_gcopy(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0xE1 - gCOPY pop% pop% pop% pop% pop% pop%")
 
     # gCOPY id%,x%,y%,w%,h%,mode%
-
-    mode = stack.pop()
-    w, h = stack.pop_2()
-    x, y = stack.pop_2()
-    id = stack.pop()
+    id, x, y, w, h, mode = stack.pop_n(6)
 
     _logger.debug(f" - gCOPY {id} {x} {y} {w} {h} {mode}")
     procedure.get_window_manager().gCOPY(id, x, y, w, h, mode)
@@ -450,9 +435,7 @@ def qcode_gcopy(procedure, data_stack: data_stack, stack: stack):
 def qcode_gpatt(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0xE0 - gPATT pop% pop% pop% pop%")
 
-    mode = stack.pop()
-    w, h = stack.pop_2()
-    id = stack.pop()
+    id, w, h, mode = stack.pop_n(4)
 
     _logger.debug(f" - gPATT {id} {w} {h} {mode}")
     procedure.get_window_manager().gPATT(id, w, h, mode)

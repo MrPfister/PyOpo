@@ -50,14 +50,12 @@ def qcode_loc(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0x15 - push% LOC(pop$2, pop$1)")
 
     # Search is case invariant
-    pop_1 = stack.pop().upper()
-    pop_2 = stack.pop().upper()
+    pop_1: str = stack.pop().upper()
+    pop_2: str = stack.pop().upper()
 
     # Find returns -1 if not found, or 0 based otherwise.
     # The OPL command is 0 if not found and 1 based
     res = pop_2.find(pop_1) + 1
-
-    # print(f" - LOC({pop_2}, {pop_1}) = {res}")
 
     stack.push(0, res)
 
@@ -75,8 +73,7 @@ def qcode_left(procedure, data_stack: data_stack, stack: stack):
     a > l : l
     """
 
-    x = stack.pop()
-    a = stack.pop()
+    a, x = stack.pop_2()
 
     if x < 0:
         raise (KErrInvalidArgs)
@@ -91,12 +88,9 @@ def qcode_left(procedure, data_stack: data_stack, stack: stack):
 def qcode_rept(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0xD0 - push$ REPT$(pop$2, pop%1)")
 
-    pop_1 = stack.pop()
-    pop_2 = stack.pop()
+    pop_2, pop_1 = stack.pop_2()
 
     rept = pop_2 * pop_1
-
-    # print(f" - REPT$({pop_2}, {pop_1}) = {rept}")
 
     stack.push(3, rept)
 
@@ -104,12 +98,9 @@ def qcode_rept(procedure, data_stack: data_stack, stack: stack):
 def qcode_gen(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0xC6 - push$ GEN$(pop*2, pop%1)")
 
-    y = stack.pop()
-    x = stack.pop()
+    x, y = stack.pop_2()
     if int(x) == x:
         x = int(x)
-
-    # print(f" - GEN$({x}, {y})")
 
     int_len = len(str(int(x)))
     res = str(x)
@@ -121,8 +112,7 @@ def qcode_gen(procedure, data_stack: data_stack, stack: stack):
 
     if y < 0:
         # Right justify results
-        y = abs(y) - len(res)
-        y = max(y, 0)
+        y = max(abs(y) - len(res), 0)
         res = " " * y + res
     elif min_len > y:
         # Requested length is shorter than the minimum required length
@@ -139,8 +129,7 @@ def qcode_gen(procedure, data_stack: data_stack, stack: stack):
 def qcode_num(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0xCE - push$ NUM$(pop*2, pop%1)")
 
-    y = stack.pop()
-    x = stack.pop()
+    x, y = stack.pop_2()
 
     if abs(x) == x:
         _logger.debug(f"{x} is abs(x), ignoring decimal")
@@ -149,8 +138,7 @@ def qcode_num(procedure, data_stack: data_stack, stack: stack):
     res = str(int(x))
     if y < 0:
         # Right justify results
-        y = abs(y) - len(res)
-        y = max(y, 0)
+        y = max(abs(y) - len(res), 0)
         res = " " * y + res
     elif len(res) > y:
         res = "*" * y
@@ -163,9 +151,7 @@ def qcode_num(procedure, data_stack: data_stack, stack: stack):
 def qcode_fix(procedure, data_stack: data_stack, stack: stack):
     _logger.debug(f"0x57 0xC5 - push$ FIX$(pop*3, pop%2, pop%1)")
 
-    z = stack.pop()
-    y = stack.pop()
-    x = stack.pop()
+    x, y, z = stack.pop_n(3)
 
     res = str(round(x, y))
     if z < 0:
@@ -189,9 +175,7 @@ def qcode_fix(procedure, data_stack: data_stack, stack: stack):
 def qcode_mid(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0xCC - push$ MID$ pop$3 pop%2 pop%1)")
 
-    y = stack.pop()
-    x = stack.pop()
-    a = stack.pop()
+    a, x, y = stack.pop_n(3)
 
     if x - 1 < 0:
         raise (KErrOutOfRange)
@@ -214,8 +198,7 @@ def qcode_right(procedure, data_stack: data_stack, stack: stack):
     a > l : l
     """
 
-    x = stack.pop()
-    a = stack.pop()
+    a, x = stack.pop_2()
 
     if x < 0:
         raise (KErrInvalidArgs)
@@ -245,9 +228,7 @@ def qcode_hex(procedure, data_stack: data_stack, stack: stack):
 def qcode_sci(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0xD2 - push$ LOWER$ pop$")
 
-    z = stack.pop()
-    y = stack.pop()
-    x = stack.pop()
+    x, y, z = stack.pop_n(3)
 
     exp = y - 6
     format_str = "{:." + str(exp) + "E}"

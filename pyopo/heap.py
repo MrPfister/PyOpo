@@ -67,7 +67,7 @@ class data_stack:
 
         # Construct Data Stack Frame
         entry = data_frame(start=free_block_entry.start, length=size)
-        _logger.info(f"Allocating DSF Size: {size} at Offset: {entry.start}")
+        # _logger.info(f"Allocating DSF Size: {size} at Offset: {entry.start}")
 
         if self.debugger:
             self.debugger.store_alloc_block(entry.start, entry.start + entry.length)

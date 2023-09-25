@@ -18,8 +18,10 @@ _logger = logging.getLogger()
 def qcode_usr(procedure, data_stack: data_stack, stack: stack):
     op_code = procedure.get_executed_opcode()
 
-    # _logger.warning(f'{hex(op_code)} - USR / USR$ - Can not emulate!')
-    # _logger.warning(f'USR executes compiled assembly machine code, this can not currently be executed')
+    _logger.warning(f"{hex(op_code)} - USR / USR$ - Can not emulate!")
+    _logger.warning(
+        f"USR executes compiled assembly machine code, this can not currently be executed"
+    )
     raise ("Can not emulate")
 
 
@@ -144,9 +146,7 @@ def qcode_onerr(procedure, data_stack: data_stack, stack: stack):
 def qcode_parse(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0xD7 - p$=PARSE$(f$,rel$,var off%())")
 
-    off_addr = stack.pop()
-    rel = stack.pop()
-    f = stack.pop()
+    f, rel, off_addr = stack.pop_n(3)
 
     print(f" - PARSE('{f}', '{rel}' -> {off_addr})")
 
@@ -210,8 +210,7 @@ def qcode_cache(procedure, data_stack: data_stack, stack: stack):
     cache_arg = procedure.read_qcode_byte()  # Qa format
 
     if cache_arg == 2:
-        cache_max = stack.pop()
-        cache_min = stack.pop()
+        cache_min, cache_max = stack.pop_2()
         _logger.debug(f" - CACHE min%={cache_min}, max%={cache_max} - Not implemented")
     else:
         # CACHE ON / OFF
@@ -255,7 +254,7 @@ def qcode_lock(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0xF1 - LOCK")
 
     q = procedure.read_qcode_byte()  # N' format
-    # _logger.warning(f" - LOCK {q} - Not Implemented")
+    _logger.warning(f" - LOCK {q} - Not Implemented")
 
 
 def qcode_busy(procedure, data_stack: data_stack, stack: stack):
@@ -266,7 +265,7 @@ def qcode_busy(procedure, data_stack: data_stack, stack: stack):
     for _ in range(args):
         stack.pop()
 
-    # _logger.warning(f" - BUSY {args} - STUB")
+    _logger.warning(f" - BUSY {args} - STUB")
 
 
 def qcode_statuswin(procedure, data_stack: data_stack, stack: stack):
@@ -278,7 +277,7 @@ def qcode_statuswin(procedure, data_stack: data_stack, stack: stack):
         for i in range(args - 1):
             stack.pop()
 
-    # _logger.warning(f" - STATUSWIN {args} - Not Implemented")
+    _logger.warning(f" - STATUSWIN {args} - Not Implemented")
 
 
 def qcode_randomize(procedure, data_stack: data_stack, stack: stack):
@@ -289,7 +288,7 @@ def qcode_randomize(procedure, data_stack: data_stack, stack: stack):
 def qcode_kmod(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0x57 0x22 - KMOD")
 
-    # _logger.warning(f" - KMOD - Not Implemented")
+    _logger.warning(f" - KMOD - Not Implemented")
     input()
     stack.push(0, 0)
 
@@ -317,8 +316,7 @@ def qcode_err_virt(procedure, data_stack: data_stack, stack: stack):
 def qcode_beep(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0xA0 - BEEP pop%2 pop% - NOT IMPLEMENTED")
 
-    stack.pop()
-    stack.pop()
+    stack.pop_2()
 
 
 def qcode_eval(procedure, data_stack: data_stack, stack: stack):
@@ -370,9 +368,7 @@ def qcode_diaminit(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0xFF 0x02 - DIAMINIT - Not Implemented")
 
     args = procedure.read_qcode_byte()  # DBF D Byte
-
-    for _ in range(args):
-        stack.pop()
+    stack.pop_n(args)
 
 
 def qcode_diampos(procedure, data_stack: data_stack, stack: stack):

@@ -26,6 +26,15 @@ class stack:
 
         return self.stack_frame.pop()[1]
 
+    def pop_n(self, n: int) -> Tuple:
+        """Pops the top n variable values from the stack"""
+        assert len(self.stack_frame) >= n
+
+        popped_vals = [self.stack_frame.pop()[1] for _ in range(n)]
+        popped_vals.reverse()
+
+        return (*popped_vals,)
+
     def pop_2(self) -> Tuple[Any, Any]:
         """Returns the values of the top two stack entries.
 
@@ -34,8 +43,11 @@ class stack:
         This is optimal for graphics calls that require (x,y) or (w,h) params
 
         Due to LIFO of the stack, they are done in reverse order b -> a
+
+        Note:
+        For n=2 this function is faster than pop_n(2)
         """
-        assert len(self.stack_frame) > 1
+        assert len(self.stack_frame) > 0
 
         _, b = self.stack_frame.pop()
         _, a = self.stack_frame.pop()

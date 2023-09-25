@@ -40,9 +40,7 @@ def qcode_dtext(procedure, data_stack: data_stack, stack: stack):
 def qcode_dedit_3(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0xED 0x06 - dEDIT pop=3, pop$2, pop%1")
 
-    max_len = stack.pop()
-    prompt = stack.pop()
-    addr = stack.pop()
+    addr, prompt, max_len = stack.pop_n(3)
 
     # Get the current (start value)
     addr_start_val = data_stack.read(3, addr)
@@ -55,10 +53,7 @@ def qcode_dedit_3(procedure, data_stack: data_stack, stack: stack):
 def qcode_dlong(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0xED 0x02 - dLONG pop=4, pop$3, pop&2 pop&1")
 
-    max = stack.pop()
-    min = stack.pop()
-    prompt = stack.pop()
-    addr = stack.pop()
+    addr, prompt, min, max = stack.pop_n(4)
 
     # Get the current (start value)
     addr_start_val = data_stack.read(1, addr)
@@ -71,10 +66,7 @@ def qcode_dlong(procedure, data_stack: data_stack, stack: stack):
 def qcode_dfloat(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0xED 0x03 - dFLOAT pop=4, pop$3, pop&2 pop&1")
 
-    max = stack.pop()
-    min = stack.pop()
-    prompt = stack.pop()
-    addr = stack.pop()
+    addr, prompt, min, max = stack.pop_n(4)
 
     # Get the current (start value)
     addr_start_val = data_stack.read(2, addr)
@@ -101,9 +93,7 @@ def qcode_dedit_2(procedure, data_stack: data_stack, stack: stack):
 def qcode_dchoice(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0xED 0x01 - dCHOICE pop=3, pop$2, pop$1")
 
-    choice_list = stack.pop()
-    prompt = stack.pop()
-    addr = stack.pop()
+    addr, prompt, choice_list = stack.pop_n(3)
 
     # Get the current (start value)
     addr_start_val = data_stack.read(0, addr)
@@ -118,9 +108,7 @@ def qcode_dchoice(procedure, data_stack: data_stack, stack: stack):
 def qcode_dfile(procedure, data_stack: data_stack, stack: stack):
     _logger.debug("0xED 0x09 - dFILE pop=3, pop$2, pop%1")
 
-    flags = stack.pop()
-    prompt = stack.pop()
-    addr = stack.pop()
+    addr, prompt, flags = stack.pop_n(3)
 
     # Get the current (start value)
     addr_start_val = data_stack.read(3, addr)
@@ -153,8 +141,7 @@ def qcode_dbuttons(procedure, data_stack: data_stack, stack: stack):
 
     buttons = []
     for i in range(arg_count):
-        char = stack.pop()
-        text = stack.pop()
+        text, char = stack.pop_2()
         buttons.append((text, char))
 
     procedure.executable.dialog_manager.dBUTTONS(buttons)
