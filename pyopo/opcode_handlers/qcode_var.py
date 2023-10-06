@@ -328,15 +328,12 @@ def qcode_push_ee_addr(procedure, data_stack: data_stack, stack: stack):
 
             # Check the first instance in the DS
             for proc in procedure.executable.proc_stack:
-                for gd in proc.procedure["global_declarations"]:
-                    if gd["name"] == gd_name:
-                        dsf_offset = (
-                            proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
-                        )  # DSF Offset is for callee Proc
-                        # print(f"Found Global Reference {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
-                        break
-
-                if dsf_offset != -1:
+                gd = proc.procedure["global_declarations"].get(gd_name, None)
+                if gd:
+                    dsf_offset = (
+                        proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
+                    )  # DSF Offset is for callee Proc
+                    # print(f"Found Global Reference {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
                     break
 
     if dsf_offset == -1:
@@ -346,15 +343,12 @@ def qcode_push_ee_addr(procedure, data_stack: data_stack, stack: stack):
 
             # Find which procedure declared it
             for proc in procedure.executable.proc_stack:
-                for gd in proc.procedure["global_declarations"]:
-                    if gd["name"] == gr_name:
-                        dsf_offset = (
-                            proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
-                        )  # DSF Offset is for callee Proc
-                        # print(f"Found Global Reference {gr_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
-                        break
-
-                if dsf_offset != -1:
+                gd = proc.procedure["global_declarations"].get(gr_name, None)
+                if gd:
+                    dsf_offset = (
+                        proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
+                    )  # DSF Offset is for callee Proc
+                    # print(f"Found Global Reference {gr_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
                     break
 
     if dsf_offset == -1:
@@ -385,15 +379,12 @@ def qcode_push_ee_value(procedure, data_stack: data_stack, stack: stack):
 
             # Check the first instance in the DS
             for proc in procedure.executable.proc_stack:
-                for gd in proc.procedure["global_declarations"]:
-                    if gd["name"] == gd_name:
-                        dsf_offset = (
-                            proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
-                        )  # DSF Offset is for callee Proc
-                        # print(f"Found Global Reference {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
-                        break
-
-                if dsf_offset != -1:
+                gd = proc.procedure["global_declarations"].get(gd_name, None)
+                if gd:
+                    dsf_offset = (
+                        proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
+                    )  # DSF Offset is for callee Proc
+                    # print(f"Found Global Reference {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
                     break
 
     if dsf_offset == -1:
@@ -403,15 +394,12 @@ def qcode_push_ee_value(procedure, data_stack: data_stack, stack: stack):
 
             # Find which procedure declared it
             for proc in procedure.executable.proc_stack:
-                for gd in proc.procedure["global_declarations"]:
-                    if gd["name"] == gr_name:
-                        dsf_offset = (
-                            proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
-                        )  # DSF Offset is for callee Proc
-                        # print(f"Found Global Reference {gr_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
-                        break
-
-                if dsf_offset != -1:
+                gd = proc.procedure["global_declarations"].get(gr_name, None)
+                if gd:
+                    dsf_offset = (
+                        proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
+                    )  # DSF Offset is for callee Proc
+                    # print(f"Found Global Reference {gr_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}")
                     break
 
     if dsf_offset == -1:
@@ -484,43 +472,35 @@ def qcode_push_ee_array_addr(procedure, data_stack: data_stack, stack: stack):
 
             # Check the first instance in the DS
             for proc in procedure.executable.proc_stack:
-                for gd in proc.procedure["global_declarations"]:
-                    if gd["name"] == gd_name:
-                        ref_proc = proc
-                        dsf_offset = (
-                            proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
-                        )  # DSF Offset is for callee Proc
-                        _logger.debug(
-                            f"Found Global Declaration {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}"
-                        )
-                        break
-
-                if dsf_offset != -1:
+                gd = proc.procedure["global_declarations"].get(gd_name, None)
+                if gd:
+                    ref_proc = proc
+                    dsf_offset = (
+                        proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
+                    )  # DSF Offset is for callee Proc
+                    _logger.debug(
+                        f"Found Global Declaration {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}"
+                    )
                     break
 
     if dsf_offset == -1:
-        for gr in procedure.procedure["global_references"]:
-            if gr["ee"] == ee_ref:
-                gr_name = gr["name"]
+        gr = procedure.procedure["cached_gr"].get(ee_ref, None)
 
-                # Find which procedure declared it
-                for proc in procedure.executable.proc_stack:
-                    for gd in proc.procedure["global_declarations"]:
-                        if gd["name"] == gr_name:
-                            ref_proc = proc
-                            dsf_offset = (
-                                proc.data_stack_frame_offset
-                                + gd["data_stack_frame_offset"]
-                            )  # DSF Offset is for callee Proc
-                            _logger.debug(
-                                f"Found Global Reference {gr_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}"
-                            )
-                            break
+        if gr:
+            gr_name = gr["name"]
 
-                    if dsf_offset != -1:
-                        break
-
-                break
+            # Find which procedure declared it
+            for proc in procedure.executable.proc_stack:
+                gd = proc.procedure["global_declarations"].get(gr_name, None)
+                if gd:
+                    ref_proc = proc
+                    dsf_offset = (
+                        proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
+                    )  # DSF Offset is for callee Proc
+                    _logger.debug(
+                        f"Found Global Reference {gr_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}"
+                    )
+                    break
 
     if dsf_offset == -1:
         raise (f"Unable to find EE Ref: {ee_ref}")
@@ -597,57 +577,39 @@ def qcode_push_ee_array_val(procedure, data_stack: data_stack, stack: stack):
 
         gd = procedure.procedure["cached_gd"].get(ee_ref, None)
 
-        """
-        gd_list = list(
-            filter(
-                lambda gd: gd["ee"] == ee_ref,
-                procedure.procedure["global_declarations"],
-            )
-        )
-        """
-
         if gd:
             gd_name = gd["name"]
 
             # Check the first instance in the DS
             for proc in procedure.executable.proc_stack:
-                for gd in proc.procedure["global_declarations"]:
-                    if gd["name"] == gd_name:
-                        ref_proc = proc
-                        dsf_offset = (
-                            proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
-                        )  # DSF Offset is for callee Proc
-                        _logger.debug(
-                            f"Found Global Declaration {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}"
-                        )
-                        break
-
-                if dsf_offset != -1:
+                gd = proc.procedure["global_declarations"].get(gd_name, None)
+                if gd:
+                    ref_proc = proc
+                    dsf_offset = (
+                        proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
+                    )  # DSF Offset is for callee Proc
+                    _logger.debug(
+                        f"Found Global Declaration {gd_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}"
+                    )
                     break
 
     if dsf_offset == -1:
-        for gr in procedure.procedure["global_references"]:
-            if gr["ee"] == ee_ref:
-                gr_name = gr["name"]
+        gr = procedure.procedure["cached_gr"].get(ee_ref, None)
+        if gr:
+            gr_name = gr["name"]
 
-                # Find which procedure declared it
-                for proc in procedure.executable.proc_stack:
-                    for gd in proc.procedure["global_declarations"]:
-                        if gd["name"] == gr_name:
-                            ref_proc = proc
-                            dsf_offset = (
-                                proc.data_stack_frame_offset
-                                + gd["data_stack_frame_offset"]
-                            )  # DSF Offset is for callee Proc
-                            _logger.debug(
-                                f"Found Global Reference!! {gr_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}"
-                            )
-                            break
-
-                    if dsf_offset != -1:
-                        break
-
-                break
+            # Find which procedure declared it
+            for proc in procedure.executable.proc_stack:
+                gd = proc.procedure["global_declarations"].get(gr_name, None)
+                if gd:
+                    ref_proc = proc
+                    dsf_offset = (
+                        proc.data_stack_frame_offset + gd["data_stack_frame_offset"]
+                    )  # DSF Offset is for callee Proc
+                    _logger.debug(
+                        f"Found Global Reference!! {gr_name} Originally declared in Stack Proc {proc.procedure['name']} at DSF Offset {dsf_offset}"
+                    )
+                    break
 
     if dsf_offset == -1:
         # _logger.warning(f'Unable to determine EE ref: {ee_ref}')

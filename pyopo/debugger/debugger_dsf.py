@@ -208,7 +208,7 @@ class DebuggerDSF:
 
         proc = self.executable.get_top_proc_instance_for_name(proc_name)
 
-        for gd in proc.procedure["global_declarations"]:
+        for gd in proc.procedure["global_declarations"].values():
             if dsf_offset == gd["data_stack_frame_offset"]:
                 return True
 
@@ -217,7 +217,7 @@ class DebuggerDSF:
     def global_var_name(self, dsf_offset: int, proc_name: str) -> str | None:
         proc = self.executable.get_top_proc_instance_for_name(proc_name)
 
-        for gd in proc.procedure["global_declarations"]:
+        for gd in proc.procedure["global_declarations"].values():
             if dsf_offset == gd["data_stack_frame_offset"]:
                 return gd["name"]
 

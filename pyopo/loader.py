@@ -3,6 +3,8 @@ import json
 import struct
 import sys
 
+from collections import OrderedDict
+
 from typing import Any, List
 
 import logging
@@ -189,7 +191,7 @@ class loader:
             "<H", binary, binary_offset
         )[0]
         binary_offset += 2
-        procedure_info["global_declarations"] = []
+        procedure_info["global_declarations"] = OrderedDict()
         if procedure_info["global_declaration_section_size"] > 0:
             while True:
                 # Global per-variable block
@@ -207,7 +209,7 @@ class loader:
                 global_var["ee"] = external_ref_counter
                 external_ref_counter += len(global_var["name"]) + 4
 
-                procedure_info["global_declarations"].append(global_var)
+                procedure_info["global_declarations"][global_var["name"]] = global_var
 
                 if (
                     binary_offset
@@ -244,7 +246,7 @@ class loader:
                     break
 
         # Global References Section
-        procedure_info["global_references"] = []
+        procedure_info["global_references"] = OrderedDict()
         while True:
             global_name = loader._read_qstr(binary_offset, binary)
             binary_offset += len(global_name) + 1
@@ -255,9 +257,10 @@ class loader:
 
             type_code = int(binary[binary_offset])
             binary_offset += 1
-            procedure_info["global_references"].append(
-                {"name": global_name, "type": type_code}
-            )
+            procedure_info["global_references"][global_name] = {
+                "name": global_name,
+                "type": type_code,
+            }
 
         if loader.first_proc:
             _logger.info(json.dumps(procedure_info["global_references"], indent=4))
@@ -299,13 +302,14 @@ class loader:
             procedure_info["parameters"][i]["ee"] = external_ref_counter
             external_ref_counter += 2
 
-        for i in range(len(procedure_info["global_references"])):
-            procedure_info["global_references"][i]["ee"] = external_ref_counter
+        for i, gr in enumerate(procedure_info["global_references"].values()):
+            gr["ee"] = external_ref_counter
             external_ref_counter += 2
 
         # Create optimised LUTs to allow O(1) lookup based on ee
         procedure_info["cached_gr"] = {
-            gr_entry["ee"]: gr_entry for gr_entry in procedure_info["global_references"]
+            gr_entry["ee"]: gr_entry
+            for gr_entry in procedure_info["global_references"].values()
         }
 
         procedure_info["cached_cp"] = {
@@ -314,7 +318,7 @@ class loader:
 
         procedure_info["cached_gd"] = {
             gd_entry["ee"]: gd_entry
-            for gd_entry in procedure_info["global_declarations"]
+            for gd_entry in procedure_info["global_declarations"].values()
         }
 
         if loader.first_proc:

@@ -184,7 +184,7 @@ class executable:
         """Attach a performance profiling tool to the interpreter"""
         self.profiler_debugger = DebuggerProfiler()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.file
 
     def loadm(self, module: Self) -> None:
