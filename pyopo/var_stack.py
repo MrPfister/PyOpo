@@ -1,8 +1,8 @@
-from typing import List, Tuple, Any
+from typing import List, Any
 
 
 class stack:
-    """The variable stack is a 2 variable Tuple LIFO stack
+    """The variable stack is a 2 variable tuple LIFO stack
 
     The tuple is composed of the variable type code and variable value:
 
@@ -18,7 +18,7 @@ class stack:
     """
 
     def __init__(self):
-        self.stack_frame: List[Tuple[int, Any]] = []
+        self.stack_frame: List[tuple[int, Any]] = []
 
     def pop(self) -> Any:
         """Pop the top variable value from the stack"""
@@ -26,7 +26,7 @@ class stack:
 
         return self.stack_frame.pop()[1]
 
-    def pop_n(self, n: int) -> Tuple:
+    def pop_n(self, n: int) -> tuple[Any, ...]:
         """Pops the top n variable values from the stack"""
         assert len(self.stack_frame) >= n
 
@@ -35,7 +35,7 @@ class stack:
 
         return (*popped_vals,)
 
-    def pop_2(self) -> Tuple[Any, Any]:
+    def pop_2(self) -> tuple[Any, Any]:
         """Returns the values of the top two stack entries.
 
         Performs the same as pop(), pop() but requires reduced calls.
@@ -53,7 +53,7 @@ class stack:
         _, a = self.stack_frame.pop()
         return (a, b)
 
-    def pop_with_type(self) -> Tuple[int, Any]:
+    def pop_with_type(self) -> tuple[int, Any]:
         """Pop the top variable value from the stack as well as its type code"""
         assert len(self.stack_frame) > 0
 
@@ -67,6 +67,6 @@ class stack:
 
         self.stack_frame.append((type, value))
 
-    def peek(self) -> Tuple[int, Any]:
+    def peek(self) -> tuple[int, Any]:
         """Peek the top variable and its type code from the stack"""
         return self.stack_frame[-1]

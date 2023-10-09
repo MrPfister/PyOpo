@@ -4,7 +4,7 @@ import math
 import logging
 import logging.config
 from pyopo.opl_exceptions import *
-from typing import Optional, List, Tuple
+from typing import Optional, List
 
 from functools import lru_cache
 
@@ -373,7 +373,7 @@ class Window:
         self.gATx = x
         self.gATy = y
 
-    def gPOLY(self, x: int, y: int, ops: List[Tuple[int, int]]) -> None:
+    def gPOLY(self, x: int, y: int, ops: List[tuple[int, int]]) -> None:
         cur_x = x
         cur_y = y
 
@@ -398,7 +398,7 @@ class Window:
         self.gATx += dx
         self.gATy += dy
 
-    def draw_line(self, start: Tuple[int, int], end: Tuple[int, int]) -> None:
+    def draw_line(self, start: tuple[int, int], end: tuple[int, int]) -> None:
         # Helper method to handle line drawing
 
         s_x, s_y = start
@@ -1267,64 +1267,66 @@ class WindowManager:
                     (255, 255, 255, 255),
                 )
 
-                if self.giprint["location"] == 0:
-                    # Top Left
-                    self.screen_buffer.fill(
-                        (0, 0, 0, 0),
-                        Rect(
-                            0,
-                            self.height - font_surface.get_height() - 4,
-                            font_surface.get_width() + 4,
-                            font_surface.get_height() + 4,
-                        ),
-                    )
-                    self.screen_buffer.blit(
-                        font_surface, (2, self.height - font_surface.get_height() - 2)
-                    )
-                elif self.giprint["location"] == 1:
-                    # Bottom Left
-                    self.screen_buffer.fill(
-                        (0, 0, 0, 0),
-                        Rect(
-                            0,
-                            0,
-                            font_surface.get_width() + 4,
-                            font_surface.get_height() + 4,
-                        ),
-                    )
-                    self.screen_buffer.blit(font_surface, (2, 2))
-                elif self.giprint["location"] == 2:
-                    # Top Right
-                    self.screen_buffer.fill(
-                        (0, 0, 0, 0),
-                        Rect(
-                            self.width - font_surface.get_width() - 4,
-                            self.height - font_surface.get_height() - 4,
-                            font_surface.get_width() + 4,
-                            font_surface.get_height() + 4,
-                        ),
-                    )
-                    self.screen_buffer.blit(
-                        font_surface,
-                        (
-                            self.width - font_surface.get_width() - 2,
-                            self.height - font_surface.get_height() - 2,
-                        ),
-                    )
-                elif self.giprint["location"] == 3:
-                    # Bottom Right
-                    self.screen_buffer.fill(
-                        (0, 0, 0, 0),
-                        Rect(
-                            self.width - font_surface.get_width() - 4,
-                            0,
-                            font_surface.get_width() + 4,
-                            font_surface.get_height() + 4,
-                        ),
-                    )
-                    self.screen_buffer.blit(
-                        font_surface, (self.width - font_surface.get_width() - 2, 2)
-                    )
+                match self.giprint["location"]:
+                    case 0:
+                        # Top Left
+                        self.screen_buffer.fill(
+                            (0, 0, 0, 0),
+                            Rect(
+                                0,
+                                self.height - font_surface.get_height() - 4,
+                                font_surface.get_width() + 4,
+                                font_surface.get_height() + 4,
+                            ),
+                        )
+                        self.screen_buffer.blit(
+                            font_surface,
+                            (2, self.height - font_surface.get_height() - 2),
+                        )
+                    case 1:
+                        # Bottom Left
+                        self.screen_buffer.fill(
+                            (0, 0, 0, 0),
+                            Rect(
+                                0,
+                                0,
+                                font_surface.get_width() + 4,
+                                font_surface.get_height() + 4,
+                            ),
+                        )
+                        self.screen_buffer.blit(font_surface, (2, 2))
+                    case 2:
+                        # Top Right
+                        self.screen_buffer.fill(
+                            (0, 0, 0, 0),
+                            Rect(
+                                self.width - font_surface.get_width() - 4,
+                                self.height - font_surface.get_height() - 4,
+                                font_surface.get_width() + 4,
+                                font_surface.get_height() + 4,
+                            ),
+                        )
+                        self.screen_buffer.blit(
+                            font_surface,
+                            (
+                                self.width - font_surface.get_width() - 2,
+                                self.height - font_surface.get_height() - 2,
+                            ),
+                        )
+                    case 3:
+                        # Bottom Right
+                        self.screen_buffer.fill(
+                            (0, 0, 0, 0),
+                            Rect(
+                                self.width - font_surface.get_width() - 4,
+                                0,
+                                font_surface.get_width() + 4,
+                                font_surface.get_height() + 4,
+                            ),
+                        )
+                        self.screen_buffer.blit(
+                            font_surface, (self.width - font_surface.get_width() - 2, 2)
+                        )
 
                 if datetime.datetime.now() - self.giprint[
                     "start_ts"

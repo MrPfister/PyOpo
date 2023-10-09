@@ -20,6 +20,8 @@ logging.logThreads = False
 logging.logProcesses = False
 logging.logMultiprocessing = False
 
+SIBO_TRANSLATOR_VERSION = 4383
+
 
 class opo_header:
     """Combined First and Second header component of a OPO/OPA file"""
@@ -163,7 +165,7 @@ class loader:
         external_ref_counter = 18  # The first item is always 18
 
         # Optimisation Section (for select compiler versions)
-        if translator_version >= 4383:
+        if translator_version >= SIBO_TRANSLATOR_VERSION:
             procedure_info["optimisation_section_size"] = struct.unpack_from(
                 "<H", binary, binary_offset
             )[0]

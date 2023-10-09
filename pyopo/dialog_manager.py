@@ -1,5 +1,7 @@
 from pyopo.filehandler_filesystem import *
 from typing import List
+from dataclasses import dataclass
+from enum import Enum
 
 import pygame
 from pygame.locals import *
@@ -52,8 +54,31 @@ ALLOWED_ALPHA_CHARS = [
 ALLOWED_NUM_CHARS = [K_0, K_1, K_2, K_3, K_4, K_5, K_6, K_7, K_8, K_9]
 
 
+class DialogTypes(Enum):
+    dEDIT = 1
+    dTEXT = 2
+    dLONG = 3
+    dFLOAT = 4
+    dBUTTONS = 5
+    dFILE = 6
+    dCHOICE = 7
+    dINIT = 8
+
+
+@dataclass
+class DialogItem:
+    type: str
+    p: str
+    body: str
+    text_align: int
+    use_bold: bool
+    draw_line: bool
+    selectable: bool
+    selection_index: int
+
+
 class Dialog:
-    def __init__(self, title, flags) -> None:
+    def __init__(self, title: str, flags: int) -> None:
         self.title = title
         self.flags = flags
 
@@ -78,7 +103,7 @@ class Dialog:
         if len(title) > 0 and flags != 2:
             self.dialog_items.append(
                 {
-                    "type": "dINIT",
+                    "type": DialogTypes.dINIT,
                     "title": title,
                     "selectable": False,
                     "selection_index": None,
@@ -113,7 +138,7 @@ class Dialog:
 
         self.dialog_items.append(
             {
-                "type": "dTEXT",
+                "type": DialogTypes.dTEXT,
                 "p": p,
                 "body": body,
                 "text_align": text_type,
@@ -130,7 +155,7 @@ class Dialog:
     def dEDIT(self, addr: int, value: str, prompt: str, max_len: int) -> None:
         self.dialog_items.append(
             {
-                "type": "dEDIT",
+                "type": DialogTypes.dEDIT,
                 "addr": addr,
                 "value": str(value),
                 "prompt": prompt,
@@ -145,7 +170,7 @@ class Dialog:
     def dBUTTONS(self, buttons) -> None:
         self.dialog_items.append(
             {
-                "type": "dBUTTONS",
+                "type": DialogTypes.dBUTTONS,
                 "buttons": buttons,
                 "selectable": False,
                 "selection_index": None,
@@ -155,7 +180,7 @@ class Dialog:
     def dLONG(self, addr: int, value: int, prompt: str, min: int, max: int) -> None:
         self.dialog_items.append(
             {
-                "type": "dLONG",
+                "type": DialogTypes.dLONG,
                 "addr": addr,
                 "value": str(value),
                 "prompt": prompt,
@@ -173,7 +198,7 @@ class Dialog:
     ) -> None:
         self.dialog_items.append(
             {
-                "type": "dFLOAT",
+                "type": DialogTypes.dFLOAT,
                 "addr": addr,
                 "value": str(value),
                 "prompt": prompt,
@@ -191,7 +216,7 @@ class Dialog:
     ) -> None:
         self.dialog_items.append(
             {
-                "type": "dFILE",
+                "type": DialogTypes.dFILE,
                 "addr": addr,
                 "value": 0,
                 "prompt": prompt,
@@ -206,7 +231,7 @@ class Dialog:
     def dCHOICE(self, addr, value, prompt, choice_list):
         self.dialog_items.append(
             {
-                "type": "dCHOICE",
+                "type": DialogTypes.dCHOICE,
                 "addr": addr,
                 "value": max(1, value),
                 "prompt": prompt,
@@ -225,18 +250,19 @@ class Dialog:
     def handle_DIALOG(self, data_stack) -> int:
         # Store results into the Data Stack Frame
         for item in self.dialog_items:
-            if item["type"] == "dEDIT":
-                print(f"Storing '{item['value']}' to {item['addr']}")
-                data_stack.write(3, item["value"], item["addr"])
-            elif item["type"] == "dLONG":
-                print(f"Storing '{item['value']}' to {item['addr']}")
-                data_stack.write(1, int(item["value"]), item["addr"])
-            elif item["type"] == "dFLOAT":
-                print(f"Storing '{item['value']}' to {item['addr']}")
-                data_stack.write(2, float(item["value"]), item["addr"])
-            elif item["type"] == "dFILE":
-                print(f"Storing '{item['value']}' to {item['addr']}")
-                data_stack.write(3, item["dfile_value"], item["addr"])
+            match item["type"]:
+                case DialogTypes.dEDIT:
+                    print(f"Storing '{item['value']}' to {item['addr']}")
+                    data_stack.write(3, item["value"], item["addr"])
+                case DialogTypes.dLONG:
+                    print(f"Storing '{item['value']}' to {item['addr']}")
+                    data_stack.write(1, int(item["value"]), item["addr"])
+                case DialogTypes.dFLOAT:
+                    print(f"Storing '{item['value']}' to {item['addr']}")
+                    data_stack.write(2, float(item["value"]), item["addr"])
+                case DialogTypes.dFILE:
+                    print(f"Storing '{item['value']}' to {item['addr']}")
+                    data_stack.write(3, item["dfile_value"], item["addr"])
 
         # If the user cancels the dialog with Esc, 0 is returned, but this is handled elsewhere
         if self.select_count == 0:
@@ -282,7 +308,7 @@ class Dialog:
                         # Pass over keypress to the selected item
                         print(f"Passing over value: {evt_id} to selected item")
 
-                        if self.dialog_items[i]["type"] in ["dEDIT"]:
+                        if self.dialog_items[i]["type"] in [DialogTypes.dEDIT]:
                             if evt_id == 8:
                                 # User has pressed delete
                                 if len(self.dialog_items[i]["value"]) > 0:
@@ -295,7 +321,10 @@ class Dialog:
                             ):
                                 # Add the character
                                 self.dialog_items[i]["value"] += chr(evt_id)
-                        elif self.dialog_items[i]["type"] in ["dLONG", "dFLOAT"]:
+                        elif self.dialog_items[i]["type"] in [
+                            DialogTypes.dLONG,
+                            DialogTypes.dFLOAT,
+                        ]:
                             if evt_id == 8:
                                 # User has pressed delete
                                 if len(self.dialog_items[i]["value"]) > 0:
@@ -306,7 +335,7 @@ class Dialog:
                                 # Add the character
                                 self.dialog_items[i]["value"] += chr(evt_id)
                             elif (
-                                self.dialog_items[i]["type"] == "dFLOAT"
+                                self.dialog_items[i]["type"] == DialogTypes.dFLOAT
                                 and evt_id == K_PERIOD
                             ):
                                 # dFLOAT allows for decimal
@@ -319,7 +348,10 @@ class Dialog:
                                 # Only alow minus symbol as first character
                                 self.dialog_items[i]["value"] += "-"
 
-                        elif self.dialog_items[i]["type"] in ["dFILE", "dCHOICE"]:
+                        elif self.dialog_items[i]["type"] in [
+                            DialogTypes.dFILE,
+                            DialogTypes.dCHOICE,
+                        ]:
                             # Only accept left and right
                             if evt_id == 259:
                                 # Left
@@ -344,7 +376,7 @@ class Dialog:
     def get_button_keycodes(self) -> List[int]:
         button_keycodes = []
         for item in self.dialog_items:
-            if item["type"] == "dBUTTONS":
+            if item["type"] == DialogTypes.dBUTTONS:
                 for i in range(len(item["buttons"])):
                     button_keycodes.append(item["buttons"][i][1])
 
@@ -362,45 +394,47 @@ class Dialog:
         max_width = 0
         for item in self.dialog_items:
             item_width = 0
-            if item["type"] == "dINIT":
-                item_width = (
-                    self.dialog_font.size(item["title"])[0] + DIALOG_PADDING * 2
-                )
-            elif item["type"] == "dTEXT":
-                item_width = (
-                    self.dialog_font.size(item["p"])[0]
-                    + self.dialog_font.size(item["body"])[0]
-                    + DIALOG_PADDING * 3
-                )
-            elif item["type"] in ["dEDIT", "dLONG", "dCHOICE", "dFLOAT"]:
-                item_width = (
-                    self.dialog_font.size(item["prompt"])[0]
-                    + self.dialog_font.size("ABCDEFGHIJKL")[0]
-                    + DIALOG_PADDING * 3
-                )
 
-                # item_width = screen_width - DIALOG_MARGIN * 2 - DIALOG_PADDING * 2
-            elif item["type"] == "dBUTTONS":
-                item_width = 0
-                max_button_width = 0
-                for i in range(len(item["buttons"])):
-                    # Work out the size of the maximum button
-                    button_text = (
-                        item["buttons"][i][0] + " %" + chr(item["buttons"][i][1])
+            match item["type"]:
+                case DialogTypes.dINIT:
+                    item_width = (
+                        self.dialog_font.size(item["title"])[0] + DIALOG_PADDING * 2
                     )
-                    max_button_width = max(
-                        max_button_width, self.dialog_font.size(button_text)[0]
+                case DialogTypes.dTEXT:
+                    item_width = (
+                        self.dialog_font.size(item["p"])[0]
+                        + self.dialog_font.size(item["body"])[0]
+                        + DIALOG_PADDING * 3
+                    )
+                case DialogTypes.dEDIT | DialogTypes.dLONG | DialogTypes.dCHOICE | DialogTypes.dFLOAT:
+                    item_width = (
+                        self.dialog_font.size(item["prompt"])[0]
+                        + self.dialog_font.size("ABCDEFGHIJKL")[0]
+                        + DIALOG_PADDING * 3
                     )
 
-                button_width = max_button_width + DIALOG_PADDING * 2
-                item["button_width"] = button_width
+                    # item_width = screen_width - DIALOG_MARGIN * 2 - DIALOG_PADDING * 2
+                case DialogTypes.dBUTTONS:
+                    item_width = 0
+                    max_button_width = 0
+                    for i in range(len(item["buttons"])):
+                        # Work out the size of the maximum button
+                        button_text = (
+                            item["buttons"][i][0] + " %" + chr(item["buttons"][i][1])
+                        )
+                        max_button_width = max(
+                            max_button_width, self.dialog_font.size(button_text)[0]
+                        )
 
-                item_width = button_width * len(item["buttons"])
-                item_width += DIALOG_PADDING * (len(item["buttons"]) - 1)
+                    button_width = max_button_width + DIALOG_PADDING * 2
+                    item["button_width"] = button_width
 
-                item["buttons_total_width"] = item_width
+                    item_width = button_width * len(item["buttons"])
+                    item_width += DIALOG_PADDING * (len(item["buttons"]) - 1)
 
-                item_width += DIALOG_MARGIN * 2 + DIALOG_PADDING * 2
+                    item["buttons_total_width"] = item_width
+
+                    item_width += DIALOG_MARGIN * 2 + DIALOG_PADDING * 2
 
             # Set minimum width
             item_width = max(item_width, MIN_ROW_WIDTH)
@@ -435,7 +469,7 @@ class Dialog:
         for i in range(len(self.dialog_items)):
             item = self.dialog_items[i]
 
-            if item["type"] == "dINIT":
+            if item["type"] == DialogTypes.dINIT:
                 self.dialog_surface.fill(
                     color=(192, 192, 192),
                     rect=(5, height_offset, self.dialog_width - 10, item_height),
@@ -449,7 +483,7 @@ class Dialog:
                         height_offset + DIALOG_PADDING,
                     ),
                 )
-            elif item["type"] == "dTEXT":
+            elif item["type"] == DialogTypes.dTEXT:
                 if item["selectable"] and self.selected_item == item["selection_index"]:
                     # Item is selected
                     print("Item is selected")
@@ -521,7 +555,11 @@ class Dialog:
                             ),
                             1,
                         )
-            elif item["type"] in ["dEDIT", "dLONG", "dFLOAT"]:
+            elif item["type"] in [
+                DialogTypes.dEDIT,
+                DialogTypes.dLONG,
+                DialogTypes.dFLOAT,
+            ]:
                 d_offset = DIALOG_MARGIN + DIALOG_PADDING
 
                 if len(item["prompt"]) > 0:
@@ -560,7 +598,7 @@ class Dialog:
                         font_surface, (d_offset + 2, height_offset + DIALOG_PADDING)
                     )
 
-            elif item["type"] == "dBUTTONS":
+            elif item["type"] == DialogTypes.dBUTTONS:
                 d_offset = DIALOG_MARGIN + DIALOG_PADDING
 
                 print(item)
@@ -597,7 +635,7 @@ class Dialog:
                         # Padding between buttons
                         d_offset += DIALOG_PADDING
 
-            elif item["type"] in ["dFILE", "dCHOICE"]:
+            elif item["type"] in [DialogTypes.dFILE, DialogTypes.dCHOICE]:
                 d_offset = DIALOG_MARGIN + DIALOG_PADDING
 
                 if len(item["prompt"]) > 0:
