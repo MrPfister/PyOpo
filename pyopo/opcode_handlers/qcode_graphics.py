@@ -371,11 +371,11 @@ def qcode_gloadbit(procedure, data_stack: data_stack, stack: stack):
         # Extract the corresponding binary data from the OPA file itself
         id = None
         for e in procedure.executable.embedded_files:
-            if not open_addr_offset or open_addr_offset == e["start_offset"]:
-                if e["type"] == "PIC":
+            if not open_addr_offset or open_addr_offset == e.start_offset:
+                if e.type == "PIC":
                     _logger.debug(" - Loading internal PIC from OPA")
                     pic_binary = procedure.executable.binary[
-                        e["start_offset"] : e["end_offset"]
+                        e.start_offset : e.end_offset
                     ]
                     id = procedure.executable.window_manager.gLOADBIT_binary(
                         pic_binary, write, index

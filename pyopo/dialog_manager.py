@@ -1,5 +1,4 @@
 from pyopo.filehandler_filesystem import *
-from typing import List
 from dataclasses import dataclass
 from enum import Enum
 
@@ -373,7 +372,7 @@ class Dialog:
             # Force re-render
             self.dialog_surface = None
 
-    def get_button_keycodes(self) -> List[int]:
+    def get_button_keycodes(self) -> list[int]:
         button_keycodes = []
         for item in self.dialog_items:
             if item["type"] == DialogTypes.dBUTTONS:

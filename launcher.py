@@ -6,7 +6,7 @@ import os
 if __name__ == "__main__":
     drive_path = os.path.join(os.path.dirname(str(__file__)), "TESTDRIVE")
     executable_location = os.path.join(
-        os.path.dirname(str(__file__)), "TESTDRIVE\M\APP\\\FAIRWAY.OPA"
+        os.path.dirname(str(__file__)), "TESTDRIVE\M\APP\\\SLOTS.OPA"
     )
 
     executable = pyopo.executable.load_executable(executable_location)

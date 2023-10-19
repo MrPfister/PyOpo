@@ -2,8 +2,6 @@ import statistics
 import logging
 import logging.config
 
-from typing import List
-
 from pyopo.heap import data_stack
 from pyopo.var_stack import stack
 
@@ -198,7 +196,7 @@ def qcode_var(procedure, data_stack: data_stack, stack: stack):
     stack.push(T_FLOAT, max_value)
 
 
-def get_na_array_list(na: int, data_stack: data_stack, stack: stack) -> List[float]:
+def get_na_array_list(na: int, data_stack: data_stack, stack: stack) -> list[float]:
     """Retrieves arguments for list operation opcodes.
 
     The list of float arguments is either popped from the stack given an na value, or

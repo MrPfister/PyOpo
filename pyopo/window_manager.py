@@ -4,7 +4,7 @@ import math
 import logging
 import logging.config
 from pyopo.opl_exceptions import *
-from typing import Optional, List
+from typing import Optional
 
 from functools import lru_cache
 
@@ -90,7 +90,7 @@ class DrawableSprite:
         return sprite_id
 
     @staticmethod
-    def append_sprite(tenths: int, spritelist: List[str], dx: int, dy: int) -> None:
+    def append_sprite(tenths: int, spritelist: list[str], dx: int, dy: int) -> None:
         if not DrawableSprite._sprites:
             raise ("No Sprite defined")
 
@@ -373,7 +373,7 @@ class Window:
         self.gATx = x
         self.gATy = y
 
-    def gPOLY(self, x: int, y: int, ops: List[tuple[int, int]]) -> None:
+    def gPOLY(self, x: int, y: int, ops: list[tuple[int, int]]) -> None:
         cur_x = x
         cur_y = y
 
@@ -866,14 +866,13 @@ class Window:
                             (self.gATx + x, self.gATy + y), col
                         )
         else:
-            col = (0, 0, 0, 0) if mode == 0 else (255, 255, 255, 255)
-
             if self.gGREY_mode > 0:
                 # Grey plane
                 col = (128, 128, 128, 0) if mode == 0 else (255, 255, 255, 255)
                 self.grey_plane_surface.fill(col, (self.gATx, self.gATy, width, height))
 
             if self.gGREY_mode == 0 or self.gGREY_mode == 2:
+                col = (0, 0, 0, 0) if mode == 0 else (255, 255, 255, 255)
                 self.black_plane_surface.fill(
                     col, (self.gATx, self.gATy, width, height)
                 )
@@ -897,7 +896,7 @@ class Window:
                 1,
             )
 
-    def gINFO(self) -> List[int]:
+    def gINFO(self) -> list[int]:
         ginfo = [0] * 32
 
         """
@@ -964,7 +963,7 @@ class WindowManager:
             executable.header.source_filename.split("\\")[-1].replace("\0", "")
         )
 
-        self.windows: List[Window] = []
+        self.windows: list[Window] = []
         self.gupdate_enabled = True
 
         self.graphics_cursor = 0
@@ -1195,10 +1194,11 @@ class WindowManager:
                 )
 
                 if self.defaultwin_mode == 1:
+                    # Use BLEND_MIN to ensure Black is rendered ontop of the grey plane
                     self.screen_buffer.blit(
                         window.grey_plane_surface,
                         Rect(window.gPOSx, window.gPOSy, window.width, window.height),
-                        special_flags=pygame.BLEND_MULT,
+                        special_flags=pygame.BLEND_MIN,
                     )
 
             # Render any active sprite animation

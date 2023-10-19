@@ -1,4 +1,4 @@
-from typing import List, Any
+from typing import Any
 
 
 class stack:
@@ -18,7 +18,7 @@ class stack:
     """
 
     def __init__(self):
-        self.stack_frame: List[tuple[int, Any]] = []
+        self.stack_frame: list[tuple[int, Any]] = []
 
     def pop(self) -> Any:
         """Pop the top variable value from the stack"""
@@ -28,6 +28,7 @@ class stack:
 
     def pop_n(self, n: int) -> tuple[Any, ...]:
         """Pops the top n variable values from the stack"""
+        assert n > 0
         assert len(self.stack_frame) >= n
 
         popped_vals = [self.stack_frame.pop()[1] for _ in range(n)]
@@ -44,8 +45,7 @@ class stack:
 
         Due to LIFO of the stack, they are done in reverse order b -> a
 
-        Note:
-        For n=2 this function is faster than pop_n(2)
+        Note: For n=2 this function is faster than pop_n(2)
         """
         assert len(self.stack_frame) > 0
 

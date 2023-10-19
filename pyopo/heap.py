@@ -1,4 +1,4 @@
-from typing import Optional, Any, Self, List
+from typing import Optional, Any, Self
 import struct
 
 # Debuggers
@@ -46,8 +46,8 @@ class data_stack:
         self._struct_unpacker_float = struct.Struct("<d")
         self._struct_unpacker_long = struct.Struct("<i")
 
-        self.free_blocks: List[free_block] = [free_block(start=0, length=size)]
-        self.frames: List[data_frame] = []
+        self.free_blocks: list[free_block] = [free_block(start=0, length=size)]
+        self.frames: list[data_frame] = []
 
         # Underlying memory
         self.memory = bytearray(size)

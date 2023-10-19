@@ -5,7 +5,7 @@ import sys
 
 from collections import OrderedDict
 
-from typing import Any, List
+from typing import Any
 
 import logging
 import logging.config
@@ -54,7 +54,7 @@ class loader:
 
     def _readembeddedfiles(
         binary: bytes, embedded_files_offset: int, second_header_offset: int
-    ) -> List[embedded_file]:
+    ) -> list[embedded_file]:
         """Read the list of embedded files that are stored between the first and second header in the OPO/OPA file"""
 
         file_offset = embedded_files_offset
@@ -122,7 +122,7 @@ class loader:
         translator_version: int,
         binary: bytes,
         src_filename: str,
-    ) -> List[Any]:
+    ) -> list[Any]:
         procedures = []
 
         binary_offset = procedure_table_offset
@@ -158,7 +158,7 @@ class loader:
 
     def _read_procedure(
         offset: int, translator_version: int, binary: bytes
-    ) -> List[Any]:
+    ) -> list[Any]:
         procedure_info = {}
         binary_offset = offset
 
