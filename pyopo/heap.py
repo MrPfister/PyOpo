@@ -130,6 +130,36 @@ class data_stack:
         # Update memory in place
         self.memory[offset : offset + len(data_bytes)] = data_bytes
 
+    def write_int16(self, value: Any, offset: int) -> None:
+        """Optimised write for int16 to the heap"""
+        data_bytes = self._struct_unpacker_int16.pack(value)
+
+        if self.debugger:
+            self.debugger.store_var(type, offset, "Unknown", value, 2)
+
+        # Update memory in place
+        self.memory[offset : offset + 2] = data_bytes
+
+    def write_long(self, value: Any, offset: int) -> None:
+        """Optimised write for int32(long) to the heap"""
+        data_bytes = self._struct_unpacker_long.pack(value)
+
+        if self.debugger:
+            self.debugger.store_var(type, offset, "Unknown", value, 4)
+
+        # Update memory in place
+        self.memory[offset : offset + 4] = data_bytes
+
+    def write_float(self, value: Any, offset: int) -> None:
+        """Optimised write for ieee 64bit floats to the heap"""
+        data_bytes = self._struct_unpacker_float.pack(value)
+
+        if self.debugger:
+            self.debugger.store_var(type, offset, "Unknown", value, 8)
+
+        # Update memory in place
+        self.memory[offset : offset + 8] = data_bytes
+
     def read(
         self, type: int, offset: int, array_index: int = 1
     ) -> Any:  # OPL arrays start at 1
@@ -167,3 +197,15 @@ class data_stack:
             ].decode("utf-8", "replace")
 
         raise ("Invalid data type - dsf read")
+
+    def read_int16(self, offset: int) -> int:  # OPL arrays start at 1
+        # 2 Byte Word
+        return self._struct_unpacker_int16.unpack_from(self.memory, offset)[0]
+
+    def read_int16_array(
+        self, offset: int, array_index: int = 1
+    ) -> int:  # OPL arrays start at 1
+        # 2 Byte Word
+        return self._struct_unpacker_int16.unpack_from(
+            self.memory, offset + 2 * (array_index - 1)
+        )[0]

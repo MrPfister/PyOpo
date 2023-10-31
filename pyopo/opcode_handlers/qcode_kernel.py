@@ -227,7 +227,7 @@ def qcode_call(procedure, data_stack: data_stack, stack: stack):
         supplystatus[2] = 0
 
         for i in range(len(supplystatus)):
-            data_stack.write(0, supplystatus[i], dsf_addr + 2 * i)
+            data_stack.write_int16(supplystatus[i], dsf_addr + 2 * i)
 
         stack.push(0, 0)
 
@@ -267,7 +267,7 @@ def qcode_call(procedure, data_stack: data_stack, stack: stack):
         supplystatus[3] = 1400
 
         for i in range(len(supplystatus)):
-            data_stack.write(0, supplystatus[i], dsf_addr + 2 * i)
+            data_stack.write_int16(supplystatus[i], dsf_addr + 2 * i)
 
         stack.push(0, 0)
 

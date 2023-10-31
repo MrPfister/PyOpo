@@ -40,7 +40,7 @@ def qcode_peekb(procedure, data_stack: data_stack, stack: stack):
 
 def qcode_peekw(procedure, data_stack: data_stack, stack: stack):
     addr = stack.pop()
-    val = data_stack.read(0, addr)
+    val = data_stack.read_int16(addr)
 
     _logger.debug(f"0x57 0x19 - PEEKW({addr}) -> {val}")
     stack.push(0, val)

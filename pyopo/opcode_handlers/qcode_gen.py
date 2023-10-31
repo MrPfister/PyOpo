@@ -155,7 +155,7 @@ def qcode_parse(procedure, data_stack: data_stack, stack: stack):
     # sets p$ to LOC::M:\ODB\NEW.ODB and x%() to (1,6,8,13,16,0)
 
     # off%(1) filing system offset (1 always)
-    data_stack.write(0, 1, off_addr)
+    data_stack.write_int16(1, off_addr)
 
     if f.startswith("\\"):
         # f resets path
@@ -163,26 +163,26 @@ def qcode_parse(procedure, data_stack: data_stack, stack: stack):
 
     # off%(2) device offset (1 always on Series 5 since filing system is not a component of filenames on the Series 5)
     if rel.startswith("LOC::"):
-        data_stack.write(0, 6, off_addr + 2)
+        data_stack.write_int16(6, off_addr + 2)
     else:
-        data_stack.write(0, 1, off_addr + 2)
+        data_stack.write_int16(1, off_addr + 2)
 
     # off%(3) path offset
     path_offset = rel.find("\\")
-    data_stack.write(0, path_offset + 1, off_addr + 4)
+    data_stack.write_int16(path_offset + 1, off_addr + 4)
 
     filename = rel.split("\\")[-1]
     file_name = filename.split(".")[0]
     file_ext = filename.split(".")[-1]
 
     # off%(4) filename offset
-    data_stack.write(0, rel.find(file_name) + 1, off_addr + 6)
+    data_stack.write_int16(rel.find(file_name) + 1, off_addr + 6)
 
     # off%(5) file extension offset
-    data_stack.write(0, rel.find(file_ext), off_addr + 8)
+    data_stack.write_int16(rel.find(file_ext), off_addr + 8)
 
     # off%(6) flags for wildcards in returned string
-    data_stack.write(0, 0, off_addr + 10)
+    data_stack.write_int16(0, off_addr + 10)
 
     stack.push(3, rel)
 
@@ -239,8 +239,8 @@ def qcode_getevent(procedure, data_stack: data_stack, stack: stack):
 
     _logger.debug(f" - GETEVENT DSF Offset={addr} -> {getevent}")
 
-    data_stack.write(0, getevent[0], addr)
-    data_stack.write(0, getevent[1], addr + 2)
+    data_stack.write_int16(getevent[0], addr)
+    data_stack.write_int16(getevent[1], addr + 2)
 
 
 def qcode_escape(procedure, data_stack: data_stack, stack: stack):

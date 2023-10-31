@@ -124,10 +124,10 @@ def qcode_secstodate(procedure, data_stack: data_stack, stack: stack):
 
     secstodate = datetime.datetime.fromtimestamp(s)
 
-    data_stack.write(0, secstodate.year, yr_addr)
-    data_stack.write(0, secstodate.month, mo_addr)
-    data_stack.write(0, secstodate.day, dy_addr)
-    data_stack.write(0, secstodate.hour, hr_addr)
-    data_stack.write(0, secstodate.minute, mn_addr)
-    data_stack.write(0, secstodate.second, sc_addr)
-    data_stack.write(0, secstodate.timetuple().tm_yday, yrday_addr)
+    data_stack.write_int16(secstodate.year, yr_addr)
+    data_stack.write_int16(secstodate.month, mo_addr)
+    data_stack.write_int16(secstodate.day, dy_addr)
+    data_stack.write_int16(secstodate.hour, hr_addr)
+    data_stack.write_int16(secstodate.minute, mn_addr)
+    data_stack.write_int16(secstodate.second, sc_addr)
+    data_stack.write_int16(secstodate.timetuple().tm_yday, yrday_addr)

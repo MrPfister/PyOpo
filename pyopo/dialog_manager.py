@@ -112,10 +112,7 @@ class Dialog:
     def DIALOG(self) -> None:
         self.show = True
 
-        if self.select_count == 0:
-            self.selected_item = None
-        else:
-            self.selected_item = 0
+        self.selected_item = None if self.select_count == 0 else 0
 
     def dTEXT(self, p: str, body: str, text_align: int) -> None:
         use_bold = False

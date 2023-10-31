@@ -156,19 +156,19 @@ def qcode_glineto(procedure, data_stack: data_stack, stack: stack):
     procedure.get_graphics_context().gLINETO(x, y)
 
 
-def qcode_gpoly(procedure, data_stack, stack) -> None:
+def qcode_gpoly(procedure, data_stack: data_stack, stack: stack) -> None:
     dsf_offset = stack.pop()
 
-    x = data_stack.read(0, dsf_offset)
-    y = data_stack.read(0, dsf_offset + 2)
+    x = data_stack.read_int16(dsf_offset)
+    y = data_stack.read_int16(dsf_offset + 2)
     operations = data_stack.read(0, dsf_offset + 4)
 
     _logger.debug(f"0xDE - gPOLY: {x}, {y}, Operations: {operations}")
 
     ops = [
         (
-            data_stack.read(0, dsf_offset + 6 + i * 4),  # dx
-            data_stack.read(0, dsf_offset + 8 + i * 4),  # dy
+            data_stack.read_int16(dsf_offset + 6 + i * 4),  # dx
+            data_stack.read_int16(dsf_offset + 8 + i * 4),  # dy
         )
         for i in range(operations)
     ]
@@ -462,7 +462,7 @@ def qcode_ginfo(procedure, data_stack: data_stack, stack: stack):
 
     # Write out gINFO struct to memory
     for i in range(32):
-        data_stack.write(0, ginfo[i], dsf_offset + 2 * i)
+        data_stack.write_int16(ginfo[i], dsf_offset + 2 * i)
 
 
 def qcode_gcreatebit(procedure, data_stack: data_stack, stack: stack):

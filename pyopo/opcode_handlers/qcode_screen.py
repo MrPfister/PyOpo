@@ -76,7 +76,7 @@ def qcode_screeninfo(procedure, data_stack: data_stack, stack: stack):
     _logger.debug(f"0xFF 0x14 - SCREENINFO var%()")
 
     addr = stack.pop()
-    dsf_offset = data_stack.read(0, addr)
+    dsf_offset = data_stack.read_int16(addr)
 
     screeninfo = [0] * 10
 
@@ -97,4 +97,4 @@ def qcode_screeninfo(procedure, data_stack: data_stack, stack: stack):
 
     # Write out gINFO struct to memory
     for i in range(10):
-        data_stack.write(0, screeninfo[i], dsf_offset + 2 * i)
+        data_stack.write_int16(screeninfo[i], dsf_offset + 2 * i)

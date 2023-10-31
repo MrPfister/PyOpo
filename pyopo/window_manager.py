@@ -736,8 +736,10 @@ class Window:
         text = text.replace("\00", "")
         if len(text) > 0:
             # Text for the button
-            font_surface = self.create_text_surface(
+
+            font_surface = pygame.font.Font(pygame.font.get_default_font(), 13).render(
                 text,
+                True,
                 (0, 0, 0, 0),
             )
 
@@ -753,6 +755,8 @@ class Window:
                     font_surface,
                     (self.gATx + width / 2 - max_text_width / 2, self.gATy + y_offset),
                 )
+
+        self.update_required = True
 
     def gFONT(self, font_id: int) -> None:
         if font_id not in Window.GFONTS:
@@ -1193,7 +1197,7 @@ class WindowManager:
                     Rect(window.gPOSx, window.gPOSy, window.width, window.height),
                 )
 
-                if self.defaultwin_mode == 1:
+                if self.defaultwin_mode == 100:
                     # Use BLEND_MIN to ensure Black is rendered ontop of the grey plane
                     self.screen_buffer.blit(
                         window.grey_plane_surface,
